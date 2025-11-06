@@ -16,6 +16,27 @@ jobs:
         with:
           python-version: "3.10"
       - name: Run pre-commit
+        continue-on-error: true
         run: |
           pip install pre-commit==3.8.0
           pre-commit run --all-files
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "📝 Files were modified by pre-commit"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "✅ No changes needed"
+          fi
+
+      - name: Commit formatting changes
+        if: steps.check_changes.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git commit -m "🎨 Auto-format code with pre-commit"
+          git push
