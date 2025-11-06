@@ -57,7 +57,7 @@ def evaluate_html_extract_compare_dataset():
             "source": "local",  # 本地数据源
             "format": "jsonl",  # JSONL 格式
             "field": {
-                "id": "data_id",  # data_id 字段映射
+                "id": "track_id",  # data_id 字段映射
                 "prompt": "content",  # prompt 字段映射
                 "content": "magic_md",  # content 字段映射
                 # language 会自动放入 raw_data
@@ -66,19 +66,20 @@ def evaluate_html_extract_compare_dataset():
 
         # 执行器配置
         "executor": {
-            "eval_group": "html_extract_compare",  # 使用 html_extract_compare 评估组
-            "max_workers": 4,  # 并发数
-            "batch_size": 1,  # 批次大小
+            "prompt_list": ["PromptHtmlExtractCompareV2"],  # ← 使用 Prompt 类的注册名称
+            "max_workers": 10,  # 并发数
+            "batch_size": 10,  # 批次大小
             "result_save": {
                 "bad": True,  # 保存工具B更好的样本（error_status=True）
-                "good": True  # 保存工具A更好或相同的样本
+                "good": True,  # 保存工具A更好或相同的样本
+                "raw": True  # 保存原始数据
             }
         },
 
         # 评估器配置
         "evaluator": {
             "llm_config": {
-                "LLMHtmlExtractCompareV2": {
+                "LLMHtmlExtractCompareV2": {    # ← 使用 LLM 类的注册名称
                     "model": OPENAI_MODEL,
                     "key": OPENAI_KEY,
                     "api_url": OPENAI_URL,
