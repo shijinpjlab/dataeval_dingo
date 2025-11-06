@@ -37,6 +37,9 @@ class LLMRAGContextPrecision(BaseOpenAI):
         question = input_data.prompt or input_data.raw_data.get("question", "")
         answer = input_data.content or input_data.raw_data.get("answer", "")
 
+        if not answer:
+            raise ValueError("Context Precision评估需要answer字段")
+
         # 处理contexts
         contexts = None
         if input_data.context:

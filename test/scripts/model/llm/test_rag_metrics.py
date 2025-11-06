@@ -12,7 +12,7 @@ RAG 评估指标测试
 pytest test/scripts/model/llm/test_rag_metrics.py -v
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -376,11 +376,14 @@ class TestContextRelevancy:
 class TestIntegration:
     """集成测试（使用 mock）"""
 
-    @patch('dingo.model.llm.llm_rag_faithfulness.LLMRAGFaithfulness.call_llm')
-    def test_faithfulness_end_to_end(self, mock_call_llm):
+    @patch('dingo.model.llm.base_openai.BaseOpenAI.send_messages')
+    @patch('dingo.model.llm.base_openai.BaseOpenAI.create_client')
+    def test_faithfulness_end_to_end(self, mock_create_client, mock_send_messages):
         """测试忠实度端到端评估"""
+        # Mock 客户端创建
+        mock_create_client.return_value = None
         # Mock LLM 响应
-        mock_call_llm.return_value = '{"score": 8, "reason": "答案基本忠实于上下文。"}'
+        mock_send_messages.return_value = '{"score": 8, "reason": "答案基本忠实于上下文。"}'
 
         data = Data(
             data_id="test_integration",
@@ -393,12 +396,16 @@ class TestIntegration:
 
         assert result.score == 8
         assert result.error_status is False
-        assert mock_call_llm.called
+        assert mock_send_messages.called
 
-    @patch('dingo.model.llm.llm_rag_answer_relevancy.LLMRAGAnswerRelevancy.call_llm')
-    def test_answer_relevancy_end_to_end(self, mock_call_llm):
+    @patch('dingo.model.llm.base_openai.BaseOpenAI.send_messages')
+    @patch('dingo.model.llm.base_openai.BaseOpenAI.create_client')
+    def test_answer_relevancy_end_to_end(self, mock_create_client, mock_send_messages):
         """测试答案相关性端到端评估"""
-        mock_call_llm.return_value = '{"score": 9, "reason": "答案直接回答问题。"}'
+        # Mock 客户端创建
+        mock_create_client.return_value = None
+        # Mock LLM 响应
+        mock_send_messages.return_value = '{"score": 9, "reason": "答案直接回答问题。"}'
 
         data = Data(
             data_id="test_integration_2",
@@ -410,12 +417,16 @@ class TestIntegration:
 
         assert result.score == 9
         assert result.error_status is False
-        assert mock_call_llm.called
+        assert mock_send_messages.called
 
-    @patch('dingo.model.llm.llm_rag_context_relevancy.LLMRAGContextRelevancy.call_llm')
-    def test_context_relevancy_end_to_end(self, mock_call_llm):
+    @patch('dingo.model.llm.base_openai.BaseOpenAI.send_messages')
+    @patch('dingo.model.llm.base_openai.BaseOpenAI.create_client')
+    def test_context_relevancy_end_to_end(self, mock_create_client, mock_send_messages):
         """测试上下文相关性端到端评估"""
-        mock_call_llm.return_value = '{"score": 6, "reason": "半数上下文相关。"}'
+        # Mock 客户端创建
+        mock_create_client.return_value = None
+        # Mock LLM 响应
+        mock_send_messages.return_value = '{"score": 6, "reason": "半数上下文相关。"}'
 
         data = Data(
             data_id="test_integration_3",
@@ -430,7 +441,7 @@ class TestIntegration:
 
         assert result.score == 6
         assert result.error_status is False  # 默认阈值是5
-        assert mock_call_llm.called
+        assert mock_send_messages.called
 
 
 class TestEdgeCases:
@@ -521,5 +532,5 @@ class TestEdgeCases:
             LLMRAGFaithfulness.process_response(response)
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])
+# 使用 pytest 命令运行测试，而不是直接运行此文件
+# pytest test/scripts/model/llm/test_rag_metrics.py -v

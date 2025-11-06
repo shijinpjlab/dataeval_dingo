@@ -435,6 +435,7 @@ The current built-in detection rules and model methods focus on common data qual
 - [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
 - [mlflow](https://github.com/mlflow/mlflow)
 - [deepeval](https://github.com/confident-ai/deepeval)
+- [ragas](https://github.com/explodinggradients/ragas)
 
 # Contribution
 
