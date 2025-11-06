@@ -2,6 +2,7 @@ import json
 import os
 import time
 import uuid
+from re import T
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ValidationError
@@ -37,7 +38,7 @@ class DatasetArgs(BaseModel):
 
 
 class ExecutorResultSaveArgs(BaseModel):
-    bad: bool = False
+    bad: bool = True
     good: bool = False
     all_labels: bool = False
     raw: bool = False

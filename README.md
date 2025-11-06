@@ -237,6 +237,10 @@ For detailed guidance on using Dingo's hallucination detection capabilities, inc
 
 📖 **[View Hallucination Detection Guide →](docs/hallucination_guide.md)**
 
+For comprehensive guidance on RAG evaluation metrics including Faithfulness, Context Precision, Answer Relevancy, Context Recall, and Context Relevancy:
+
+📖 **[View RAG Evaluation Metrics Guide →](docs/rag_evaluation_metrics_zh.md)**
+
 ### Factuality Assessment
 
 For comprehensive guidance on using Dingo's two-stage factuality evaluation system:
