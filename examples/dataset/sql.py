@@ -146,7 +146,7 @@ def example_sqlite():
 # ============= 示例 4: MySQL with 连接参数 =============
 def example_mysql_with_connect_args():
     """MySQL 数据库示例（带连接参数）
-    
+
     示例连接 URL：mysql+pymysql://data_user:data_user#123@10.161.82.109:8080/ads?charset=utf8mb4
     """
     sql_config = DatasetSqlArgs(
