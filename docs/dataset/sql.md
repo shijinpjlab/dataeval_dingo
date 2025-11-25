@@ -167,6 +167,7 @@ for data in dataset.get_data():
 | `host` | str | 否* | 数据库主机地址（SQLite 不需要） |
 | `port` | str | 否 | 数据库端口 |
 | `database` | str | 是 | 数据库名称或文件路径（SQLite） |
+| `connect_args` | str | 否 | 连接参数，如 `?charset=utf8mb4`、`?sslmode=require` 等 |
 
 *注：对于 SQLite，`username` 和 `host` 不是必填项；对于其他数据库，这些是必填项。
 
@@ -225,6 +226,48 @@ dataset_config = DatasetArgs(
     format="jsonl",
     sql_config=sql_config,
     fields=["id", "prompt", "content"]  # 只提取这些字段
+)
+```
+
+### 4. 使用连接参数
+
+对于需要特殊连接参数的场景，可以使用 `connect_args` 配置：
+
+```python
+# MySQL 使用 UTF-8 编码
+sql_config = DatasetSqlArgs(
+    dialect="mysql",
+    driver="pymysql",
+    username="root",
+    password="password",
+    host="localhost",
+    port="3306",
+    database="test_db",
+    connect_args="?charset=utf8mb4"
+)
+
+# PostgreSQL 使用 SSL 连接
+sql_config = DatasetSqlArgs(
+    dialect="postgresql",
+    driver="psycopg2",
+    username="myuser",
+    password="mypassword",
+    host="localhost",
+    port="5432",
+    database="mydb",
+    connect_args="?sslmode=require"
+)
+
+# 多个参数组合
+sql_config = DatasetSqlArgs(
+    dialect="mysql",
+    driver="pymysql",
+    username="root",
+    password="password",
+    host="localhost",
+    port="3306",
+    database="test_db",
+    connect_args="?charset=utf8mb4&connect_timeout=10"
 )
 ```
 
