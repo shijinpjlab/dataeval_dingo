@@ -178,7 +178,6 @@ for data in dataset.get_data():
 | `source` | str | 必须设置为 `"sql"` |
 | `format` | str | 推荐使用 `"jsonl"`（每行数据作为独立的 JSON 对象） |
 | `sql_config` | DatasetSqlArgs | SQL 连接配置 |
-| `fields` | List[str] | 可选，指定要提取的字段名列表 |
 
 ## 高级用法
 
@@ -218,18 +217,8 @@ sql_query = """
 """
 ```
 
-### 3. 指定字段提取
 
-```python
-dataset_config = DatasetArgs(
-    source="sql",
-    format="jsonl",
-    sql_config=sql_config,
-    fields=["id", "prompt", "content"]  # 只提取这些字段
-)
-```
-
-### 4. 使用连接参数
+### 3. 使用连接参数
 
 对于需要特殊连接参数的场景，可以使用 `connect_args` 配置：
 
