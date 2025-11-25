@@ -9,7 +9,7 @@ class TestLocal:
     def test_merge_result_info(self):
         existing_list = []
         new_item1 = ResultInfo(
-            track_id = "1",
+            dingo_id = "1",
             raw_data = {
                 "content": "�I am 8 years old. ^I love apple because:",
             },
@@ -23,7 +23,7 @@ class TestLocal:
             }
         )
         new_item2 = ResultInfo(
-            track_id = "1",
+            dingo_id = "1",
             raw_data = {
                 "content": "�I am 8 years old. ^I love apple because:",
             },
