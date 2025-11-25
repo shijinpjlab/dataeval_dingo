@@ -56,6 +56,12 @@ class SqlDataSource(DataSource):
                 f"{sql_config.host}{port_part}/{sql_config.database}"
             )
 
+        # 添加连接参数（如 ?charset=utf8mb4）
+        if sql_config.connect_args:
+            # 确保参数以 ? 开头
+            args_part = sql_config.connect_args if sql_config.connect_args.startswith('?') else f"?{sql_config.connect_args}"
+            connection_url = f"{connection_url}{args_part}"
+
         engine = create_engine(connection_url)
         return engine
 

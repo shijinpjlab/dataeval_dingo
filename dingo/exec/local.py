@@ -78,7 +78,7 @@ class LocalExecutor(ExecProto):
             )
             pbar = tqdm(total=None, unit="items")
 
-            track_id = 0
+            dingo_id = 0
             while True:
                 batch = list(itertools.islice(data_iter, self.input_args.executor.batch_size))
                 if not batch:
@@ -87,8 +87,8 @@ class LocalExecutor(ExecProto):
                 futures = []
                 futures_results = []
                 for data in batch:
-                    track_id += 1
-                    r_i = ResultInfo(track_id = str(track_id), raw_data = data.to_dict())
+                    dingo_id += 1
+                    r_i = ResultInfo(dingo_id = str(dingo_id), raw_data = data.to_dict())
                     futures_results.append(r_i)
 
                     for e_p in self.input_args.evaluator:
@@ -100,11 +100,11 @@ class LocalExecutor(ExecProto):
                         eval_list_llm = [eval for eval in e_p.evals if eval.name in Model.llm_name_map]
                         # rule
                         if os.environ.get("LOCAL_DEPLOYMENT_MODE") == "true":
-                            futures += [thread_executor.submit(self.evaluate_single_data, str(track_id), e_p.fields, 'rule', map_data, eval_list_rule)]
+                            futures += [thread_executor.submit(self.evaluate_single_data, str(dingo_id), e_p.fields, 'rule', map_data, eval_list_rule)]
                         else:
-                            futures += [process_executor.submit(self.evaluate_single_data, str(track_id), e_p.fields, 'rule', map_data, eval_list_rule)]
+                            futures += [process_executor.submit(self.evaluate_single_data, str(dingo_id), e_p.fields, 'rule', map_data, eval_list_rule)]
                         # llm
-                        futures += [thread_executor.submit(self.evaluate_single_data, str(track_id), e_p.fields, 'llm', map_data, eval_list_llm)]
+                        futures += [thread_executor.submit(self.evaluate_single_data, str(dingo_id), e_p.fields, 'llm', map_data, eval_list_llm)]
 
                 for future in concurrent.futures.as_completed(futures):
                     result_info = future.result()
@@ -153,12 +153,12 @@ class LocalExecutor(ExecProto):
 
         return self.summary
 
-    def evaluate_single_data(self, track_id: str, eval_fields: dict, eval_type: str, map_data: dict, eval_list: list) -> ResultInfo:
+    def evaluate_single_data(self, dingo_id: str, eval_fields: dict, eval_type: str, map_data: dict, eval_list: list) -> ResultInfo:
         """
         Unified evaluation function for both rule and llm evaluation types.
 
         Args:
-            track_id: Tracking ID for the data item
+            dingo_id: Tracking ID for the data item
             eval_type: Type of evaluation ('rule' or 'llm')
             map_data: Mapped data fields
             eval_list: List of evaluations to perform
@@ -166,7 +166,7 @@ class LocalExecutor(ExecProto):
         Returns:
             ResultInfo containing evaluation results
         """
-        result_info = ResultInfo(track_id=track_id)
+        result_info = ResultInfo(dingo_id=dingo_id)
         bad_eval_details = None
         good_eval_details = None
 
@@ -237,7 +237,7 @@ class LocalExecutor(ExecProto):
         return result_info
 
     def merge_result_info(self, existing_list: List[ResultInfo], new_item: ResultInfo) -> List[ResultInfo]:
-        existing_item = next((item for item in existing_list if item.track_id == new_item.track_id), None)
+        existing_item = next((item for item in existing_list if item.dingo_id == new_item.dingo_id), None)
 
         if existing_item:
             existing_item.eval_status = existing_item.eval_status or new_item.eval_status

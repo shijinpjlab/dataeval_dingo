@@ -74,7 +74,8 @@ def example_mysql():
         password="password",
         host="localhost",
         port="3306",
-        database="test_db"
+        database="test_db",
+        connect_args="charset=utf8mb4"  # 连接参数，如字符集配置
     )
 
     dataset_config = DatasetArgs(
@@ -142,7 +143,50 @@ def example_sqlite():
             break
 
 
-# ============= 示例 4: 复杂 SQL 查询 =============
+# ============= 示例 4: MySQL with 连接参数 =============
+def example_mysql_with_connect_args():
+    """MySQL 数据库示例（带连接参数）
+
+    示例连接 URL：mysql+pymysql://data_user:data_user#123@10.161.82.109:8080/ads?charset=utf8mb4
+    """
+    sql_config = DatasetSqlArgs(
+        dialect="mysql",
+        driver="pymysql",
+        username="data_user",
+        password="data_user#123",  # 密码中可以包含特殊字符
+        host="10.161.82.109",
+        port="8080",
+        database="ads",
+        connect_args="charset=utf8mb4"  # 连接参数，支持多个参数用 & 连接，如 "charset=utf8mb4&autocommit=true"
+    )
+
+    dataset_config = DatasetArgs(
+        source="sql",
+        format="jsonl",
+        sql_config=sql_config
+    )
+
+    sql_query = "SELECT * FROM evaluation_data LIMIT 1000"
+
+    input_args = InputArgs(
+        task_name="mysql_with_args_eval",
+        input_path=sql_query,
+        output_path="outputs/mysql_args_results/",
+        dataset=dataset_config,
+        evaluator=[]
+    )
+
+    datasource = SqlDataSource(input_args=input_args)
+    dataset = SqlDataset(source=datasource, name="mysql_with_args_dataset")
+
+    print("开始读取 MySQL 数据（带连接参数）...")
+    for idx, data in enumerate(dataset.get_data()):
+        print(f"处理第 {idx + 1} 条数据: {data}")
+        if idx >= 5:
+            break
+
+
+# ============= 示例 5: 复杂 SQL 查询 =============
 def example_complex_query():
     """使用复杂 SQL 查询的示例"""
     sql_config = DatasetSqlArgs(
@@ -201,8 +245,9 @@ if __name__ == "__main__":
 
     # 根据需要取消注释相应的示例
     # example_postgresql()
-    # example_mysql()
+    example_mysql()
     # example_sqlite()
+    # example_mysql_with_connect_args()
     # example_complex_query()
 
     print("\n提示: 请根据你的数据库类型修改配置参数并运行相应的示例函数")

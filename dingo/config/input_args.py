@@ -24,6 +24,7 @@ class DatasetSqlArgs(BaseModel):
     host: str = ''
     port: str = ''
     database: str = ''
+    connect_args: str = ''  # 连接参数，如 ?charset=utf8mb4
 
 
 class DatasetFieldArgs(BaseModel):

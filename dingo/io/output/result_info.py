@@ -32,14 +32,14 @@ class ResTypeInfo(BaseModel):
 
 
 class ResultInfo(BaseModel):
-    track_id: str = ''
+    dingo_id: str = ''
     raw_data: Dict = {}
     eval_status: bool = False
     eval_details: Dict[str, ResTypeInfo] = {}
 
     def to_dict(self):
         return {
-            'track_id': self.track_id,
+            'dingo_id': self.dingo_id,
             'raw_data': self.raw_data,
             'eval_status': self.eval_status,
             'eval_details': {k: v.to_dict() for k,v in self.eval_details.items()},
