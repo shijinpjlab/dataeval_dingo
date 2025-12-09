@@ -9,58 +9,12 @@ import json
 from typing import Any, Dict, List
 
 import numpy as np
-
 from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
-from dingo.model.response.response_class import ResponseScoreReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
-
-
-# 用于embedding的模型，支持OpenAI和HuggingFace
-class EmbeddingModel:
-    """Embedding模型接口，支持OpenAI和HuggingFace模型"""
-    def __init__(self, model_name: str = "text-embedding-3-large", is_openai: bool = True):
-        self.is_openai = is_openai
-        self.model_name = model_name
-
-        if is_openai:
-            # 使用OpenAI Embeddings
-            import os
-
-            from openai import OpenAI
-            self.client = OpenAI(
-                api_key="API-KEY",
-                base_url="API-KEY-BASE-URL"
-            )
-        else:
-            # 使用HuggingFace Embeddings
-            from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer(model_name)
-
-    def embed_query(self, text: str) -> List[float]:
-        """生成查询的embedding"""
-        if self.is_openai:
-            response = self.client.embeddings.create(
-                model=self.model_name,
-                input=text
-            )
-            return response.data[0].embedding
-        else:
-            return self.model.encode(text).tolist()
-
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """生成多个文档的embedding"""
-        if self.is_openai:
-            response = self.client.embeddings.create(
-                model=self.model_name,
-                input=texts
-            )
-            return [data.embedding for data in response.data]
-        else:
-            return self.model.encode(texts).tolist()
 
 
 @Model.llm_register("LLMRAGAnswerRelevancy")
@@ -125,9 +79,15 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
     @classmethod
     def init_embedding_model(cls, model_name: str = "text-embedding-3-large"):
         """初始化embedding模型"""
-        # 检查是否是OpenAI模型
-        is_openai = model_name.startswith("text-embedding-")
-        cls.embedding_model = EmbeddingModel(model_name, is_openai)
+        # 确保LLM客户端已经创建
+        if not hasattr(cls, 'client') or cls.client is None:
+            cls.create_client()
+
+        # 直接使用OpenAI的Embedding API
+        cls.embedding_model = {
+            'model_name': model_name,
+            'client': cls.client
+        }
 
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
@@ -199,8 +159,19 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
             cls.init_embedding_model()
 
         # 生成embedding
-        question_vec = np.asarray(cls.embedding_model.embed_query(question)).reshape(1, -1)
-        gen_question_vec = np.asarray(cls.embedding_model.embed_documents(generated_questions)).reshape(len(generated_questions), -1)
+        # 单个查询的embedding
+        question_response = cls.embedding_model['client'].embeddings.create(
+            model=cls.embedding_model['model_name'],
+            input=question
+        )
+        question_vec = np.asarray(question_response.data[0].embedding).reshape(1, -1)
+
+        # 多个文档的embedding
+        gen_questions_response = cls.embedding_model['client'].embeddings.create(
+            model=cls.embedding_model['model_name'],
+            input=generated_questions
+        )
+        gen_question_vec = np.asarray([data.embedding for data in gen_questions_response.data]).reshape(len(generated_questions), -1)
 
         # 计算余弦相似度
         norm = np.linalg.norm(gen_question_vec, axis=1) * np.linalg.norm(question_vec, axis=1)
@@ -265,7 +236,7 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
             result = ModelRes()
             result.score = score
 
-            # 根据分数判断是否通过（默认阈值5，满分10分）
+            # 根据分数判断是否通过，默认阈值为5
             threshold = 5
             if hasattr(cls, 'dynamic_config') and cls.dynamic_config.parameters:
                 threshold = cls.dynamic_config.parameters.get('threshold', 5)
