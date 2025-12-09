@@ -45,6 +45,7 @@ class LLMRAGContextRelevancy(BaseOpenAI):
         "source_frameworks": "Ragas + DeepEval + TruLens"
     }
 
+    @staticmethod
     def context_relevance_judge1_prompt(query: str, context: str) -> str:
         """
         First judge template for context relevance evaluation (Chinese version).
@@ -80,6 +81,7 @@ class LLMRAGContextRelevancy(BaseOpenAI):
 请不要尝试解释。
 分析上下文和问题后，相关性分数为 """
 
+    @staticmethod
     def context_relevance_judge2_prompt(query: str, context: str) -> str:
         """
         Second judge template for context relevance evaluation (Chinese version).
@@ -200,7 +202,7 @@ class LLMRAGContextRelevancy(BaseOpenAI):
         result = ModelRes()
         result.score = score
 
-        # 根据分数判断是否通过（默认阈值5，满分10分）
+        # 根据分数判断是否通过，默认阈值为5
         threshold = 5
         if hasattr(cls, 'dynamic_config') and cls.dynamic_config.parameters:
             threshold = cls.dynamic_config.parameters.get('threshold', 5)
