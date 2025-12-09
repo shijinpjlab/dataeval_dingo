@@ -22,7 +22,7 @@ from dingo.utils.exception import ConvertJsonError
 # 用于embedding的模型，支持OpenAI和HuggingFace
 class EmbeddingModel:
     """Embedding模型接口，支持OpenAI和HuggingFace模型"""
-    def __init__(self, model_name: str = "text-embedding-3-large", is_openai: bool = True):
+    def __init__(self, model_name: str = "text-embedding-3-large", is_openai: bool = True, api_key: str = None, base_url: str = None):
         self.is_openai = is_openai
         self.model_name = model_name
 
@@ -32,8 +32,8 @@ class EmbeddingModel:
 
             from openai import OpenAI
             self.client = OpenAI(
-                api_key="API-KEY",
-                base_url="API-KEY-BASE-URL"
+                api_key=api_key,
+                base_url=base_url
             )
         else:
             # 使用HuggingFace Embeddings
@@ -127,7 +127,18 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
         """初始化embedding模型"""
         # 检查是否是OpenAI模型
         is_openai = model_name.startswith("text-embedding-")
-        cls.embedding_model = EmbeddingModel(model_name, is_openai)
+        api_key = None
+        base_url = None
+        if is_openai:
+            # 从配置中获取API密钥和base_url
+            if not cls.dynamic_config.key:
+                raise ValueError("key cannot be empty in llm config.")
+            elif not cls.dynamic_config.api_url:
+                raise ValueError("api_url cannot be empty in llm config.")
+            else:
+                api_key = cls.dynamic_config.key
+                base_url = cls.dynamic_config.api_url
+        cls.embedding_model = EmbeddingModel(model_name, is_openai, api_key, base_url)
 
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
@@ -265,7 +276,7 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
             result = ModelRes()
             result.score = score
 
-            # 根据分数判断是否通过（默认阈值5，满分10分）
+            # 根据分数判断是否通过，默认阈值为5
             threshold = 5
             if hasattr(cls, 'dynamic_config') and cls.dynamic_config.parameters:
                 threshold = cls.dynamic_config.parameters.get('threshold', 5)

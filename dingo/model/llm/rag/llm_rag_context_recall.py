@@ -49,6 +49,7 @@ class LLMRAGContextRecall(BaseOpenAI):
 
     prompt = """上下文召回评估提示词，用于分类陈述归因"""
 
+    @staticmethod
     def context_recall_prompt(question: str, context: str, answer: str) -> str:
         """
         生成上下文召回评估的提示词
@@ -200,7 +201,7 @@ class LLMRAGContextRecall(BaseOpenAI):
         result = ModelRes()
         result.score = score
 
-        # 根据分数判断是否通过（默认阈值5，满分10分）
+        # 根据分数判断是否通过，默认阈值为5
         threshold = 5
         if hasattr(cls, 'dynamic_config') and cls.dynamic_config.parameters:
             threshold = cls.dynamic_config.parameters.get('threshold', 5)
