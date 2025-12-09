@@ -9,6 +9,7 @@ import json
 from typing import Any, Dict, List
 
 import numpy as np
+
 from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
