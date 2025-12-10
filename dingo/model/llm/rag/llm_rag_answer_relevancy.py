@@ -14,53 +14,8 @@ from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
-from dingo.model.response.response_class import ResponseScoreReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
-
-
-# 用于embedding的模型，支持OpenAI和HuggingFace
-class EmbeddingModel:
-    """Embedding模型接口，支持OpenAI和HuggingFace模型"""
-    def __init__(self, model_name: str = "text-embedding-3-large", is_openai: bool = True, api_key: str = None, base_url: str = None):
-        self.is_openai = is_openai
-        self.model_name = model_name
-
-        if is_openai:
-            # 使用OpenAI Embeddings
-            import os
-
-            from openai import OpenAI
-            self.client = OpenAI(
-                api_key=api_key,
-                base_url=base_url
-            )
-        else:
-            # 使用HuggingFace Embeddings
-            from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer(model_name)
-
-    def embed_query(self, text: str) -> List[float]:
-        """生成查询的embedding"""
-        if self.is_openai:
-            response = self.client.embeddings.create(
-                model=self.model_name,
-                input=text
-            )
-            return response.data[0].embedding
-        else:
-            return self.model.encode(text).tolist()
-
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """生成多个文档的embedding"""
-        if self.is_openai:
-            response = self.client.embeddings.create(
-                model=self.model_name,
-                input=texts
-            )
-            return [data.embedding for data in response.data]
-        else:
-            return self.model.encode(texts).tolist()
 
 
 @Model.llm_register("LLMRAGAnswerRelevancy")
@@ -125,20 +80,15 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
     @classmethod
     def init_embedding_model(cls, model_name: str = "text-embedding-3-large"):
         """初始化embedding模型"""
-        # 检查是否是OpenAI模型
-        is_openai = model_name.startswith("text-embedding-")
-        api_key = None
-        base_url = None
-        if is_openai:
-            # 从配置中获取API密钥和base_url
-            if not cls.dynamic_config.key:
-                raise ValueError("key cannot be empty in llm config.")
-            elif not cls.dynamic_config.api_url:
-                raise ValueError("api_url cannot be empty in llm config.")
-            else:
-                api_key = cls.dynamic_config.key
-                base_url = cls.dynamic_config.api_url
-        cls.embedding_model = EmbeddingModel(model_name, is_openai, api_key, base_url)
+        # 确保LLM客户端已经创建
+        if not hasattr(cls, 'client') or cls.client is None:
+            cls.create_client()
+
+        # 直接使用OpenAI的Embedding API
+        cls.embedding_model = {
+            'model_name': model_name,
+            'client': cls.client
+        }
 
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
@@ -210,8 +160,19 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
             cls.init_embedding_model()
 
         # 生成embedding
-        question_vec = np.asarray(cls.embedding_model.embed_query(question)).reshape(1, -1)
-        gen_question_vec = np.asarray(cls.embedding_model.embed_documents(generated_questions)).reshape(len(generated_questions), -1)
+        # 单个查询的embedding
+        question_response = cls.embedding_model['client'].embeddings.create(
+            model=cls.embedding_model['model_name'],
+            input=question
+        )
+        question_vec = np.asarray(question_response.data[0].embedding).reshape(1, -1)
+
+        # 多个文档的embedding
+        gen_questions_response = cls.embedding_model['client'].embeddings.create(
+            model=cls.embedding_model['model_name'],
+            input=generated_questions
+        )
+        gen_question_vec = np.asarray([data.embedding for data in gen_questions_response.data]).reshape(len(generated_questions), -1)
 
         # 计算余弦相似度
         norm = np.linalg.norm(gen_question_vec, axis=1) * np.linalg.norm(question_vec, axis=1)
