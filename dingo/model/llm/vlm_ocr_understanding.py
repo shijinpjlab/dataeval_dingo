@@ -1,13 +1,7 @@
-import base64
-import json
-import os
-from typing import List
-
 from dingo.io import Data
+from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
-from dingo.model.modelres import ModelRes
-from dingo.utils import log
 
 
 @Model.llm_register("VLMOCRUnderstanding")
@@ -181,5 +175,5 @@ class VLMOCRUnderstanding(BaseOpenAI):
     """
 
     @classmethod
-    def eval(cls, input_data: Data) -> ModelRes:
+    def eval(cls, input_data: Data) -> EvalDetail:
         pass  # TODO

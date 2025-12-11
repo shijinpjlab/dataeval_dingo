@@ -1,8 +1,8 @@
 import json
 
+from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
-from dingo.model.modelres import ModelRes
 from dingo.model.response.response_class import ResponseNameReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
@@ -46,7 +46,7 @@ class LLMClassifyTopic(BaseOpenAI):
     """
 
     @classmethod
-    def process_response(cls, response: str) -> ModelRes:
+    def process_response(cls, response: str) -> EvalDetail:
         log.info(response)
 
         if response.startswith("```json"):
@@ -62,16 +62,9 @@ class LLMClassifyTopic(BaseOpenAI):
 
         response_model = ResponseNameReason(**response_json)
 
-        result = ModelRes()
-        result.eval_status = False
-        # result.type = cls.prompt.metric_type
-        # result.name = response_model.name
-        # result.reason = [response_model.reason]
-
-        result.eval_details = {
-            "label": [f"{cls.__name__}.{response_model.name}"],
-            "metric": [cls.__name__],
-            "reason": [response_model.reason]
-        }
+        result = EvalDetail(metric=cls.__name__)
+        result.status = False
+        result.label = [f"{cls.__name__}.{response_model.name}"]
+        result.reason = [response_model.reason]
 
         return result

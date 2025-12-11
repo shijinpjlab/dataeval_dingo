@@ -2,7 +2,7 @@ from typing import List
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io import Data
-from dingo.model.modelres import EvalDetail, ModelRes, QualityLabel
+from dingo.io.output.eval_detail import EvalDetail
 
 
 class BaseLLM:
@@ -12,5 +12,5 @@ class BaseLLM:
     dynamic_config: EvaluatorLLMArgs
 
     @classmethod
-    def eval(cls, input_data: Data) -> ModelRes:
+    def eval(cls, input_data: Data) -> EvalDetail:
         raise NotImplementedError()
