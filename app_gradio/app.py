@@ -388,7 +388,7 @@ if __name__ == '__main__':
                 # 修改输出组件部分，使用Tabs
                 with gr.Tabs():
                     with gr.Tab("Result Summary"):
-                        summary_output = gr.Textbox(label="summary", max_height=800)
+                        summary_output = gr.JSON(label="summary", max_height=800)
                     with gr.Tab("Result Detail"):
                         detail_output = gr.JSON(label="detail", max_height=800)  # 使用JSON组件来更好地展示结构化数据
 
