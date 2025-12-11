@@ -369,7 +369,7 @@ if __name__ == '__main__':
                             visible=False
                         )
                         column_content = gr.Textbox(
-                            value="",
+                            value="content",
                             placeholder="Column name of content in the input file. If exists multiple levels, use '.' separate",
                             label="column_content",
                             visible=False
@@ -388,7 +388,7 @@ if __name__ == '__main__':
                 # 修改输出组件部分，使用Tabs
                 with gr.Tabs():
                     with gr.Tab("Result Summary"):
-                        summary_output = gr.Textbox(label="summary", max_lines=50)
+                        summary_output = gr.Textbox(label="summary", max_height=800)
                     with gr.Tab("Result Detail"):
                         detail_output = gr.JSON(label="detail", max_height=800)  # 使用JSON组件来更好地展示结构化数据
 
@@ -438,4 +438,4 @@ if __name__ == '__main__':
         )
 
     # 启动界面
-    demo.launch(server_port=7861, share=True)
+    demo.launch(share=True)
