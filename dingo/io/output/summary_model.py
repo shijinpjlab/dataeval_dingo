@@ -43,16 +43,20 @@ class SummaryModel(BaseModel):
     def calculate_metrics_score_averages(self):
         """
         计算所有指标分数的平均值、最小值、最大值、标准差
+
+        注意：为保证精度，先计算未四舍五入的平均值用于方差计算，
+        最后再对平均值和标准差进行四舍五入
         """
         for metric_name, stats in self.metrics_score_stats.items():
             scores = stats['scores']
             if scores:
-                stats['score_average'] = round(sum(scores) / len(scores), 2)
+                # 先计算未四舍五入的平均值（用于方差计算）
+                mean = sum(scores) / len(scores)
+                stats['score_average'] = round(mean, 2)
                 stats['score_min'] = round(min(scores), 2)
                 stats['score_max'] = round(max(scores), 2)
-                # 计算标准差
+                # 计算标准差（使用未四舍五入的 mean）
                 if len(scores) > 1:
-                    mean = stats['score_average']
                     variance = sum((x - mean) ** 2 for x in scores) / len(scores)
                     stats['score_std_dev'] = round(variance ** 0.5, 2)
                 # 清理scores列表以减少存储空间（保留统计信息即可）
