@@ -156,7 +156,7 @@ class TestLocal:
         assert score_summary["LLMRAGFaithfulness"] == 8.33
 
         # 验证总平均分
-        overall_avg = result.get_metrics_overall_score_average()
+        overall_avg = result.get_metrics_score_overall_average()
         assert overall_avg == 8.33
 
     def test_metrics_score_collection_without_scores(self):
@@ -195,7 +195,7 @@ class TestLocal:
         result_dict = result.to_dict()
         assert "metrics_score_stats" not in result_dict
         assert "metrics_score_summary" not in result_dict
-        assert "metrics_overall_score_average" not in result_dict
+        assert "metrics_score_overall_average" not in result_dict
 
     def test_metrics_score_collection_mixed(self):
         """测试混合场景：部分指标有分数，部分没有"""
@@ -264,4 +264,4 @@ class TestLocal:
         # 验证统计值正确
         assert result.metrics_score_stats["TestMetric1"]["score_average"] == 8.5
         assert result.metrics_score_stats["TestMetric2"]["score_average"] == 6.5
-        assert result.get_metrics_overall_score_average() == 7.5
+        assert result.get_metrics_score_overall_average() == 7.5

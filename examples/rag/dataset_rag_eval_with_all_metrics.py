@@ -69,7 +69,7 @@ def print_metrics_summary(summary):
             print(f"  标准差: {stats.get('score_std_dev', 0):.2f}")
 
     # 打印总平均分
-    overall_avg = summary.get_metrics_overall_score_average()
+    overall_avg = summary.get_metrics_score_overall_average()
     print(f"\n{'=' * 40}")
     print(f"🎯 总平均分: {overall_avg:.2f}/10")
     print(f"{'=' * 40}")

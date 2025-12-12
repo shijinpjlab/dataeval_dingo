@@ -74,7 +74,7 @@ class SummaryModel(BaseModel):
             for metric_name, stats in self.metrics_score_stats.items()
         }
 
-    def get_metrics_overall_score_average(self) -> float:
+    def get_metrics_score_overall_average(self) -> float:
         """
         计算所有指标分数的总平均分
 
@@ -109,6 +109,6 @@ class SummaryModel(BaseModel):
         if self.metrics_score_stats:
             result['metrics_score_stats'] = self.metrics_score_stats
             result['metrics_score_summary'] = self.get_metrics_score_summary()
-            result['metrics_overall_score_average'] = self.get_metrics_overall_score_average()
+            result['metrics_score_overall_average'] = self.get_metrics_score_overall_average()
 
         return result
