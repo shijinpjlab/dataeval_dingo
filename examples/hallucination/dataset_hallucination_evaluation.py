@@ -13,7 +13,6 @@ from dingo.config import InputArgs
 from dingo.exec import Executor
 # Force import hallucination detection modules
 from dingo.model.llm.llm_hallucination import LLMHallucination
-from dingo.model.prompt.prompt_hallucination import PromptHallucination
 from dingo.model.rule.rule_hallucination_hhem import RuleHallucinationHHEM
 
 

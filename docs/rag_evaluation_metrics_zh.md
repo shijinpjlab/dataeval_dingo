@@ -8,11 +8,11 @@ dingo 的 RAG 评估指标系统基于 [RAGAS 论文](https://arxiv.org/abs/2309
 
 | 指标 | 评估维度 | 需要字段 | 论文来源 |
 |------|---------|---------|---------|
-| **Faithfulness** | 答案忠实度 | question, answer, contexts | RAGAS |
-| **Context Precision** | 上下文精度 | question, answer, contexts | RAGAS |
-| **Answer Relevancy** | 答案相关性 | question, answer | RAGAS |
-| **Context Recall** | 上下文召回 | question, expected_output, contexts | RAGAS |
-| **Context Relevancy** | 上下文相关性 | question, contexts | RAGAS + DeepEval + TruLens |
+| **Faithfulness** | 答案忠实度 | user_input, response, retrieved_contexts | RAGAS |
+| **Answer Relevancy** | 答案相关性 | user_input, response | RAGAS |
+| **Context Relevancy** | 上下文相关性 | user_input, retrieved_contexts | RAGAS + DeepEval + TruLens |
+| **Context Recall** | 上下文召回 | user_input, retrieved_contexts, reference | RAGAS |
+| **Context Precision** | 上下文精度 | user_input, retrieved_contexts, reference | RAGAS |
 
 
 ## 🚀 快速开始
@@ -20,11 +20,14 @@ dingo 的 RAG 评估指标系统基于 [RAGAS 论文](https://arxiv.org/abs/2309
 ### 1. 运行示例
 
 ```bash
-# Dataset方式 - 批量评估（使用WikiEval数据集）
-python examples/rag/dataset_rag_eavl.py
+# Dataset方式 - 批量评估（推荐）
+python examples/rag/dataset_rag_eval_with_all_metrics.py
 
 # SDK方式 - 单个评估
 python examples/rag/sdk_rag_eval.py
+
+# 模拟RAG系统并评估
+python examples/rag/eval_with_mock_rag.py
 ```
 
 ### 2. SDK方式 - 单个评估
@@ -68,85 +71,145 @@ print(f"理由: {result.reason[0]}")
 from dingo.config import InputArgs
 from dingo.exec import Executor
 from pathlib import Path
+import os
+
+# 配置
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+OPENAI_KEY = os.getenv("OPENAI_API_KEY", "YOUR_API_KEY")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-large")
 
 input_data = {
-    "input_path": str(Path("test/data/WikiEval_samples_10.jsonl")),
+    "task_name": "rag_evaluation",
+    "input_path": str(Path("test/data/fiqa.jsonl")),
+    "output_path": "outputs/rag_results/",
     "dataset": {
         "source": "local",
-        "format": "jsonl",
-        "field": {
-            "prompt": "question",
-            "content": "answer",
-            "context": "context_v1"
-        }
+        "format": "jsonl"
     },
     "executor": {
-        "prompt_list": [
-            "PromptRAGFaithfulness"
-        ],
+        "max_workers": 1,
         "result_save": {
             "good": True,
-            "bad": True
+            "bad": True,
+            "all_labels": True
         }
     },
-    "evaluator": {
-        "llm_config": {
-            "LLMRAGFaithfulness": {
-                "model": "deepseek-chat",
-                "key": "YOUR_API_KEY",
-                "api_url": "https://api.openai.com/v1",
+    "evaluator": [
+        {
+            "fields": {
+                "prompt": "user_input",
+                "content": "response",
+                "context": "retrieved_contexts",
+                "reference": "reference"
             },
+            "evals": [
+                {
+                    "name": "LLMRAGFaithfulness",
+                    "config": {
+                        "model": OPENAI_MODEL,
+                        "key": OPENAI_KEY,
+                        "api_url": OPENAI_URL
+                    }
+                },
+                {
+                    "name": "LLMRAGAnswerRelevancy",
+                    "config": {
+                        "model": OPENAI_MODEL,
+                        "key": OPENAI_KEY,
+                        "api_url": OPENAI_URL,
+                        "parameters": {
+                            "embedding_model": EMBEDDING_MODEL,
+                            "strictness": 3,
+                            "threshold": 5
+                        }
+                    }
+                },
+                {
+                    "name": "LLMRAGContextRelevancy",
+                    "config": {
+                        "model": OPENAI_MODEL,
+                        "key": OPENAI_KEY,
+                        "api_url": OPENAI_URL
+                    }
+                },
+                {
+                    "name": "LLMRAGContextRecall",
+                    "config": {
+                        "model": OPENAI_MODEL,
+                        "key": OPENAI_KEY,
+                        "api_url": OPENAI_URL
+                    }
+                },
+                {
+                    "name": "LLMRAGContextPrecision",
+                    "config": {
+                        "model": OPENAI_MODEL,
+                        "key": OPENAI_KEY,
+                        "api_url": OPENAI_URL
+                    }
+                }
+            ]
         }
-    }
+    ]
 }
 
 input_args = InputArgs(**input_data)
 executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
+summary = executor.execute()
+
+# 查看结果
+print(f"总平均分: {summary.get_overall_score_average()}")
+print(f"各指标平均分: {summary.get_metrics_score_summary()}")
 ```
 
 ## 📋 数据格式
 
 ### 必需字段
 
-每个指标需要不同的字段：
+每个指标需要不同的字段（使用 Dingo 框架的字段名）：
 
-| 指标 | question | answer | contexts | expected_output | 说明 |
-|------|----------|--------|----------|-----------------|------|
-| Faithfulness | ✅ | ✅ | ✅ | - | 检测答案中的幻觉 |
-| Context Precision | ✅ | ✅ | ✅ | - | 评估检索排序质量 |
-| Answer Relevancy | ✅ | ✅ | - | - | 检测答案相关性 |
-| Context Recall | ✅ | ✅ (作为expected_output) | ✅ | - | 评估上下文完整性 |
-| Context Relevancy | ✅ | - | ✅ | - | 检测噪声上下文 |
+| 指标 | user_input (问题) | response (答案) | retrieved_contexts (上下文) | reference (参考答案) | 说明 |
+|------|------------------|----------------|---------------------------|---------------------|------|
+| **Faithfulness** | ✅ | ✅ | ✅ | - | 衡量答案是否完全基于检索到的上下文，避免幻觉 |
+| **Answer Relevancy** | ✅ | ✅ | - | - | 衡量答案是否直接回答用户问题，不需要上下文 |
+| **Context Relevancy** | ✅ | - | ✅ | - | 衡量检索到的上下文是否与问题相关 |
+| **Context Recall** | ✅ | - | ✅ | ✅ | 衡量是否检索到了所有需要的信息（需要参考答案） |
+| **Context Precision** | ✅ | - | ✅ | ✅ | 衡量检索结果的排序质量，相关文档是否在前面（需要参考答案） |
+
+**字段映射说明**：
+- `user_input` = `prompt` = `question`：用户问题
+- `response` = `content` = `answer`：RAG 系统生成的答案
+- `retrieved_contexts` = `context` = `contexts`：检索到的上下文列表
+- `reference` = `expected_output` = `ground_truth`：标准答案/参考答案
 
 ### 数据示例 (SDK方式)
+
+SDK 方式使用 `Data` 对象，字段名为：`prompt`, `content`, `context`, `reference`
 
 ```python
 from dingo.io.input import Data
 
-# Faithfulness / Context Precision / Answer Relevancy
+# Faithfulness (需要: prompt, content, context)
 data = Data(
     data_id="example_1",
-    prompt="什么是深度学习？",
-    content="深度学习是机器学习的子领域，使用多层神经网络。",
-    context=[
+    prompt="什么是深度学习？",  # user_input
+    content="深度学习是机器学习的子领域，使用多层神经网络。",  # response
+    context=[  # retrieved_contexts
         "深度学习使用多层神经网络...",
         "深度学习在图像识别中很有用..."
     ]
 )
 
-# Context Recall (需要 expected_output)
+# Answer Relevancy (需要: prompt, content)
 data = Data(
     data_id="example_2",
-    prompt="Python的特点？",
-    content="Python简洁且有丰富的库。",  # 作为expected_output
-    context=[
-        "Python以其简洁的语法著称。",
-        # 缺少关于库的信息，召回率会低
-    ]
+    prompt="什么是机器学习？",
+    content="机器学习是AI的分支，让计算机从数据中学习。"
+    # 不需要 context
 )
 
-# Context Relevancy (只需问题和上下文)
+# Context Relevancy (需要: prompt, context)
 data = Data(
     data_id="example_3",
     prompt="机器学习有哪些应用？",
@@ -154,17 +217,56 @@ data = Data(
         "机器学习用于图像识别。",  # 相关
         "区块链是分布式技术。",  # 不相关
     ]
+    # 不需要 content
+)
+
+# Context Recall (需要: prompt, context, reference)
+data = Data(
+    data_id="example_4",
+    prompt="Python的特点？",
+    context=[
+        "Python以其简洁的语法著称。",
+        # 缺少关于库的信息，召回率会低
+    ],
+    reference="Python简洁且有丰富的库。"  # 参考答案
+)
+
+# Context Precision (需要: prompt, context, reference)
+data = Data(
+    data_id="example_5",
+    prompt="深度学习的应用？",
+    context=[
+        "深度学习用于图像识别。",  # 相关，排序第1
+        "区块链是分布式技术。",  # 不相关，排序第2
+        "深度学习用于NLP。"  # 相关，排序第3（应该排前面）
+    ],
+    reference="深度学习在图像识别和NLP中广泛应用。"
 )
 ```
 
 ### 数据示例 (Dataset方式 - JSONL)
 
+Dataset 方式使用 JSONL 文件，推荐字段名为：`user_input`, `response`, `retrieved_contexts`, `reference`
+
 ```jsonl
-{"question": "什么是深度学习？", "answer": "深度学习使用神经网络...", "context_v1": "深度学习是ML的子领域..."}
-{"question": "Python的特点？", "answer": "Python简洁且有丰富的库。", "context_v1": "Python语法简洁。"}
+{"user_input": "什么是深度学习？", "response": "深度学习使用神经网络...", "retrieved_contexts": ["深度学习是ML的子领域...", "深度学习用于图像识别..."]}
+{"user_input": "Python的特点？", "response": "Python简洁且有丰富的库。", "retrieved_contexts": ["Python语法简洁。", "Python有NumPy等库。"], "reference": "Python语法简洁，生态系统丰富。"}
+```
+
+**字段映射配置**：
+
+```python
+"fields": {
+    "prompt": "user_input",           # 问题
+    "content": "response",            # RAG生成的答案
+    "context": "retrieved_contexts",  # 检索的上下文
+    "reference": "reference"          # 标准答案（可选）
+}
 ```
 
 ## 🎨 输出格式
+
+### SDK 方式输出
 
 评估结果包含：
 
@@ -172,75 +274,175 @@ data = Data(
 result = LLMRAGFaithfulness.eval(data)
 
 # 基本信息
-result.score          # 分数 (0-10，整数)
-result.error_status   # 是否出错/未通过 (True=未通过, False=通过)
-result.type           # 评估类型 (QUALITY_GOOD / QUALITY_BAD_...)
-result.name           # 评估名称
+result.eval_details.score        # 分数 (0-10，浮点数)
+result.eval_status               # 是否未通过 (True=未通过, False=通过)
+result.label                     # 标签 (QUALITY_GOOD / QUALITY_BAD_...)
+result.eval_details.reason       # 评估理由
 
-# 详细信息
-result.reason         # 评估理由（列表）
+# 示例
+print(f"分数: {result.eval_details.score}/10")
+print(f"通过: {not result.eval_status}")
+print(f"理由: {result.eval_details.reason}")
 ```
 
 **输出示例**：
 ```python
 # 通过的情况
-result.score = 9
-result.error_status = False
-result.type = "QUALITY_GOOD"
-result.name = "FAITHFULNESS_PASS"
-result.reason = ["忠实度评估通过 (分数: 9/10)\n答案完全基于上下文，未发现幻觉。"]
+result.eval_details.score = 9.2
+result.eval_status = False  # False 表示通过
+result.label = "QUALITY_GOOD.FAITHFULNESS_PASS"
+result.eval_details.reason = "答案完全基于上下文，未发现幻觉。所有陈述都有支持。"
 
 # 未通过的情况
-result.score = 3
-result.error_status = True
-result.type = "QUALITY_BAD_FAITHFULNESS"
-result.name = "PromptRAGFaithfulness"
-result.reason = ["忠实度评估未通过 (分数: 3/10)\n答案中包含未被上下文支持的陈述。"]
+result.eval_details.score = 3.5
+result.eval_status = True  # True 表示未通过
+result.label = "QUALITY_BAD.FAITHFULNESS_FAIL"
+result.eval_details.reason = "答案中包含未被上下文支持的陈述：'Python是第一个面向对象语言'"
 ```
 
-## 🔧 配置阈值
+### Dataset 方式输出
+
+执行完成后会生成 `summary.json`，包含：
+
+```json
+{
+  "task_name": "rag_evaluation",
+  "total": 50,
+  "num_good": 48,
+  "num_bad": 2,
+  "score": 96.0,
+  "metrics_score_stats": {
+    "LLMRAGFaithfulness": {
+      "score_average": 9.94,
+      "score_min": 8.33,
+      "score_max": 10.0,
+      "score_count": 50,
+      "score_std_dev": 0.3
+    },
+    "LLMRAGAnswerRelevancy": {
+      "score_average": 7.46,
+      "score_min": 5.37,
+      "score_max": 9.15,
+      "score_count": 50,
+      "score_std_dev": 0.93
+    }
+  },
+  "metrics_score_summary": {
+    "LLMRAGFaithfulness": 9.94,
+    "LLMRAGAnswerRelevancy": 7.46
+  },
+  "overall_score_average": 8.7
+}
+```
+
+**访问统计信息**：
+
+```python
+# 总平均分
+print(f"总平均分: {summary.get_overall_score_average()}")
+
+# 各指标平均分
+for metric_name, avg_score in summary.get_metrics_score_summary().items():
+    print(f"{metric_name}: {avg_score}/10")
+
+# 详细统计
+for metric_name, stats in summary.metrics_score_stats.items():
+    print(f"{metric_name}:")
+    print(f"  平均: {stats['score_average']}")
+    print(f"  最小: {stats['score_min']}")
+    print(f"  最大: {stats['score_max']}")
+    print(f"  标准差: {stats.get('score_std_dev', 0)}")
+```
+
+## 🔧 配置阈值和参数
+
+### SDK 方式配置
 
 ```python
 from dingo.config.input_args import EvaluatorLLMArgs
 
-# 方法1: 直接设置（默认阈值为5）
+# 配置阈值（默认阈值为5）
 LLMRAGFaithfulness.dynamic_config = EvaluatorLLMArgs(
     key="YOUR_API_KEY",
     api_url="https://api.openai.com/v1",
-    model="deepseek-chat",
+    model="gpt-4o-mini",
     parameters={"threshold": 7}  # 自定义阈值
 )
 
-# 方法2: 通过配置文件
-config = InputArgs(**{
-    "evaluator": {
-        "llm_config": {
-            "LLMRAGFaithfulness": {
-                "model": "deepseek-chat",
-                "key": "YOUR_API_KEY",
-                "api_url": "https://api.openai.com/v1",
-                "parameters": {"threshold": 7}
-            }
-        }
+# Answer Relevancy 特殊配置（需要 embedding）
+LLMRAGAnswerRelevancy.dynamic_config = EvaluatorLLMArgs(
+    key="YOUR_API_KEY",
+    api_url="https://api.openai.com/v1",
+    model="gpt-4o-mini",
+    parameters={
+        "embedding_model": "text-embedding-3-large",
+        "strictness": 3,  # 生成问题数量
+        "threshold": 5    # 通过阈值
     }
-})
+)
 ```
+
+### Dataset 方式配置
+
+```python
+"evaluator": [
+    {
+        "evals": [
+            {
+                "name": "LLMRAGFaithfulness",
+                "config": {
+                    "model": "gpt-4o-mini",
+                    "key": "YOUR_API_KEY",
+                    "api_url": "https://api.openai.com/v1",
+                    "parameters": {"threshold": 7}
+                }
+            },
+            {
+                "name": "LLMRAGAnswerRelevancy",
+                "config": {
+                    "model": "gpt-4o-mini",
+                    "key": "YOUR_API_KEY",
+                    "api_url": "https://api.openai.com/v1",
+                    "parameters": {
+                        "embedding_model": "text-embedding-3-large",
+                        "strictness": 3,
+                        "threshold": 5
+                    }
+                }
+            }
+        ]
+    }
+]
+```
+
+### 可配置参数
+
+| 参数 | 适用指标 | 默认值 | 说明 |
+|------|---------|--------|------|
+| `threshold` | 所有指标 | 5.0 | 通过阈值（0-10） |
+| `embedding_model` | Answer Relevancy | text-embedding-3-large | Embedding 模型名称 |
+| `strictness` | Answer Relevancy | 3 | 生成问题数量（1-5） |
 
 ## 📊 指标详细说明
 
-### 1️⃣ Faithfulness (忠实度)
+### 1️⃣ Faithfulness (答案忠实度)
 
-**评估目标**: 检测答案中的幻觉和未被上下文支持的陈述
+**评估目标**: 衡量答案是否完全基于检索到的上下文，避免幻觉
 
 **计算方式**:
-1. 将答案分解为独立的陈述
+1. 将答案分解为独立的陈述（claims）
 2. 对每个陈述判断是否被上下文支持
-3. 忠实度分数 = (被支持的陈述数 / 总陈述数) × 10
+3. 忠实度分数 = (上下文支持的陈述数 / 总陈述数) × 10
+
+**计算公式**：
+```
+Faithfulness = (上下文支持的声明数 / 总声明数) × 10
+```
 
 **输入要求**:
-- `question`: 用户问题
-- `answer`: RAG系统生成的答案
-- `contexts`: 检索到的上下文列表
+- `user_input`: 用户问题（生成答案时需要）
+- `response`: RAG系统生成的答案
+- `retrieved_contexts`: 检索到的上下文列表
 
 **评分标准**:
 - `9-10分`: 所有陈述都有上下文支持，无幻觉
@@ -254,108 +456,90 @@ config = InputArgs(**{
 **使用场景**:
 - 检测RAG系统是否生成了虚假信息
 - 验证答案是否基于检索到的事实
+- 生产环境中最关键的指标，防止幻觉
 
 ---
 
-### 2️⃣ Context Precision (上下文精度)
+### 2️⃣ Answer Relevancy (答案相关性)
 
-**评估目标**: 评估检索到的上下文是否精确且排序合理
-
-**计算方式**:
-1. 对每个上下文判断是否与答案相关
-2. 计算精度 = (相关上下文数 / 总上下文数) × 10
-3. 考虑上下文的排序位置（前面的上下文权重更高）
-
-**输入要求**:
-- `question`: 用户问题
-- `answer`: RAG系统生成的答案
-- `contexts`: 检索到的上下文列表（有序）
-
-**评分标准**:
-- `9-10分`: 所有上下文都相关，排序合理
-- `7-8分`: 大部分上下文相关，排序基本合理
-- `5-6分`: 半数上下文相关，存在噪声
-- `3-4分`: 大量不相关上下文，排序混乱
-- `0-2分`: 上下文几乎全部不相关
-
-**推荐阈值**: 5 (满分10)
-
-**使用场景**:
-- 评估检索系统的质量
-- 优化检索和排序算法
-
----
-
-### 3️⃣ Answer Relevancy (答案相关性)
-
-**评估目标**: 判断答案是否直接、完整地回答了问题
+**评估目标**: 衡量答案是否直接回答用户问题，不需要上下文
 
 **计算方式**:
-1. 分析答案是否直接回答了问题
-2. 检测答案中是否包含无关信息
-3. 相关性分数 = (相关内容占比) × 10
+1. 基于答案生成 N 个反向问题（由 LLM 从答案推断出的问题）
+2. 计算生成问题的 embedding 与原始问题 embedding 的余弦相似度
+3. 答案相关性 = 所有相似度的平均值
+
+**计算公式**：
+```
+Answer Relevancy = (1/N) × Σ cosine_sim(E_gi, E_o)
+
+其中：
+- N: 生成的问题数量，默认为 3（可通过 strictness 参数调整）
+- E_gi: 第 i 个生成问题的 embedding（从 response 反推生成的问题的向量表示）
+- E_o: 原始问题的 embedding
+- 分子: 所有余弦相似度的总和，\sum 符号表示累加
+- 分母: 生成的问题数量 N，用于计算平均值
+```
 
 **输入要求**:
-- `question`: 用户问题
-- `answer`: RAG系统生成的答案
+- `user_input`: 用户问题
+- `response`: RAG系统生成的答案
+
+**注意**: 此指标需要 embedding API（如 OpenAI 的 text-embedding-3-large）
 
 **评分标准**:
-- `9-10分`: 答案直接、完整回答问题，无冗余
-- `7-8分`: 答案基本回答问题，有少量无关信息
-- `5-6分`: 答案部分回答问题，较多无关或冗余内容
-- `3-4分`: 答案大量偏题，相关内容很少
-- `0-2分`: 答案完全不相关
+- `9-10分`: 生成的问题与原始问题高度相似，答案完全切题
+- `7-8分`: 生成的问题基本匹配，答案相关性好
+- `5-6分`: 部分生成问题相关，答案有一定相关性
+- `3-4分`: 生成问题相关性较低，答案偏题明显
+- `0-2分`: 答案完全不相关或跑题严重
 
 **推荐阈值**: 5 (满分10)
 
 **使用场景**:
 - 检测答案是否跑题或包含不必要的信息
 - 优化生成模型的回答质量
+- 确保答案直接回答用户问题
+
+**技术细节**:
+- 使用 `strictness` 参数控制生成问题数量（默认3个）
+- 使用 `threshold` 参数设置通过阈值（默认5.0）
+- 需要 embedding 模型（如 `text-embedding-3-large`）
 
 ---
 
-### 4️⃣ Context Recall (上下文召回)
+### 3️⃣ Context Relevancy (上下文相关性)
 
-**评估目标**: 检索到的上下文是否完整地支持了答案
-
-**计算方式**:
-1. 从答案（expected_output）中提取独立陈述
-2. 对每个陈述判断是否能从上下文中归因
-3. 召回率 = (可归因陈述数 / 总陈述数) × 10
-
-**输入要求**:
-- `question`: 用户问题
-- `expected_output`: 标准答案/ground truth
-- `contexts`: 检索到的上下文列表
-
-**评分标准**:
-- `9-10分`: 所有关键信息都能从上下文找到
-- `7-8分`: 大部分信息被覆盖，少量细节缺失
-- `5-6分`: 半数信息被覆盖，存在明显遗漏
-- `3-4分`: 大量关键信息缺失
-- `0-2分`: 上下文几乎不支持答案
-
-**推荐阈值**: 5 (满分10)
-
-**使用场景**:
-- 检测检索系统是否遗漏了重要信息
-- 评估检索的完整性
-
-**注意**: Context Recall 需要 ground truth 答案，通常用于评估阶段
-
----
-
-### 5️⃣ Context Relevancy (上下文相关性)
-
-**评估目标**: 检索到的上下文是否与问题相关（噪声检测）
+**评估目标**: 衡量检索到的上下文是否与问题相关
 
 **计算方式**:
-1. 对每个上下文判断是否与问题相关
-2. 相关性分数 = (相关上下文数 / 总上下文数) × 10
+采用**双评判系统（Dual-Judge）** 来评估上下文与问题的相关性，这个方法来自 NVIDIA 的研究：
+
+**评判员1 评分（Judge 1）**：
+- **任务**: 判断上下文是否包含回答问题所需的信息
+- **0** = 上下文完全不相关
+- **1** = 上下文部分相关
+- **2** = 上下文完全相关
+
+**评判员2 评分（Judge 2）**：
+- **使用不同的提示词表述，从另一个角度评估**
+- **同样使用 0-2 的评分标准**
+- **目的**: 减少单一提示词的偏差
+
+**最终分数计算**：
+```
+Context Relevancy = (相关上下文数 / 总上下文数) × 10
+
+其中：
+- 相关上下文：两个评判员的平均分 ≥ 阈值（默认1.0）
+- 不相关上下文：平均分 < 阈值
+```
 
 **输入要求**:
-- `question`: 用户问题
-- `contexts`: 检索到的上下文列表
+- `user_input`: 用户问题
+- `retrieved_contexts`: 检索到的上下文列表
+
+**注意**: 此指标不需要答案，纯粹评估检索系统的相关性
 
 **评分标准**:
 - `9-10分`: 所有上下文都与问题直接相关
@@ -369,10 +553,101 @@ config = InputArgs(**{
 **使用场景**:
 - 纯粹评估检索系统本身的相关性
 - 不依赖答案，只关注问题和上下文的匹配度
+- 检测检索系统是否引入了噪声上下文
 
 **与 Context Precision 的区别**:
-- Context Relevancy: 只看问题和上下文的匹配度
-- Context Precision: 还要看上下文是否支持最终答案
+- **Context Relevancy**: 只看问题和上下文的匹配度，不需要答案
+- **Context Precision**: 需要参考答案，评估排序质量
+
+---
+
+### 4️⃣ Context Recall (上下文召回)
+
+**评估目标**: 衡量是否检索到了所有需要的信息（需要参考答案）
+
+**计算方式**:
+1. 从参考答案（reference）中提取独立陈述
+2. 对每个陈述判断是否能从检索到的上下文中归因
+3. 召回率 = (上下文支持的参考陈述数 / 参考中总陈述数) × 10
+
+**计算公式**：
+```
+Context Recall = (上下文支持的参考声明数 / 参考中总声明数) × 10
+
+分子：retrieved_contexts 能支持的参考答案中的陈述数
+分母：reference 中总声明数
+```
+
+**输入要求**:
+- `user_input`: 用户问题
+- `retrieved_contexts`: 检索到的上下文列表
+- `reference`: 参考答案/ground truth（必需）
+
+**评分标准**:
+- `9-10分`: 所有关键信息都能从上下文找到
+- `7-8分`: 大部分信息被覆盖，少量细节缺失
+- `5-6分`: 半数信息被覆盖，存在明显遗漏
+- `3-4分`: 大量关键信息缺失
+- `0-2分`: 上下文几乎不支持参考答案
+
+**推荐阈值**: 5 (满分10)
+
+**使用场景**:
+- 检测检索系统是否遗漏了重要信息
+- 评估检索的完整性
+- 评估阶段使用，需要标注的参考答案
+
+**注意**:
+- **必须有参考答案（reference）**，通常用于评估阶段
+- 与 Faithfulness 相反：Faithfulness 防止多说（幻觉），Context Recall 防止少说（遗漏）
+
+---
+
+### 5️⃣ Context Precision (上下文精度)
+
+**评估目标**: 衡量检索结果的排序质量，相关文档是否在前面（需要参考答案）
+
+**计算方式**:
+1. 对每个位置 k 判断该上下文是否相关（是否支持参考答案）
+2. 计算每个位置的精度（Precision@k）
+3. 使用相关性指示器（v_k）加权求和
+
+**计算公式**：
+```
+Context Precision = Σ(Precision@k × v_k) / top K 中相关项总数
+
+其中：
+- K: 检索返回的总文档数，例如：5个文档
+- k: 当前位置（第几个），1, 2, 3, ..., K
+- v_k: 相关性指示器，0（不相关）或 1（相关）
+- Precision@k: 前k个文档中的精确率，0.0 到 1.0
+- Precision@k = 前k个文档中相关的数量 / k
+```
+
+**输入要求**:
+- `user_input`: 用户问题
+- `retrieved_contexts`: 检索到的上下文列表（有序）
+- `reference`: 参考答案（必需）
+
+**评分标准**:
+- `9-10分`: 所有相关上下文都排在前面，排序完美
+- `7-8分`: 大部分相关上下文靠前，排序较好
+- `5-6分`: 相关上下文分布不均，排序一般
+- `3-4分`: 相关上下文靠后，排序较差
+- `0-2分`: 排序完全混乱，不相关的排在前面
+
+**推荐阈值**: 5 (满分10)
+
+**使用场景**:
+- 评估检索系统的排序质量
+- 优化检索和排序算法
+- 确保相关文档排在前面（Top-K 优化）
+- 评估阶段使用，需要标注的参考答案
+
+**注意**:
+- **必须有参考答案（reference）**，通过对比参考答案判断哪些上下文相关
+- 关注排序：相关的文档越靠前，分数越高
+- 与 Context Relevancy 的区别：Context Precision 关注排序，Context Relevancy 只关注相关性
 
 ## 🌟 最佳实践
 
@@ -380,29 +655,38 @@ config = InputArgs(**{
 
 **完整评估** (5个指标):
 ```python
-"prompt_list": [
-    "PromptRAGFaithfulness",      # 检测幻觉
-    "PromptRAGContextPrecision",  # 评估检索质量
-    "PromptRAGAnswerRelevancy",   # 检测答案相关性
-    "PromptRAGContextRecall",     # 评估检索完整性（需要ground truth）
-    "PromptRAGContextRelevancy"   # 检测噪声上下文
+"evals": [
+    {"name": "LLMRAGFaithfulness"},       # 检测幻觉（答案是否忠实于上下文）
+    {"name": "LLMRAGAnswerRelevancy"},    # 检测答案相关性（是否回答问题）
+    {"name": "LLMRAGContextRelevancy"},   # 检测噪声上下文（上下文是否相关）
+    {"name": "LLMRAGContextRecall"},      # 评估检索完整性（需要reference）
+    {"name": "LLMRAGContextPrecision"}    # 评估检索排序质量（需要reference）
 ]
 ```
 
-**生产环境** (不需要ground truth):
+**生产环境** (不需要 reference):
 ```python
-"prompt_list": [
-    "PromptRAGFaithfulness",      # 最重要：防止幻觉
-    "PromptRAGAnswerRelevancy",   # 确保答案相关
-    "PromptRAGContextRelevancy"   # 检测噪声
+"evals": [
+    {"name": "LLMRAGFaithfulness"},       # ⭐ 最重要：防止幻觉
+    {"name": "LLMRAGAnswerRelevancy"},    # 确保答案直接回答问题
+    {"name": "LLMRAGContextRelevancy"}    # 检测检索噪声
 ]
 ```
 
-**评估阶段** (需要ground truth):
+**评估阶段** (需要 reference):
 ```python
-"prompt_list": [
-    "PromptRAGContextRecall",     # 评估检索完整性
-    "PromptRAGContextPrecision"   # 评估检索精确度
+"evals": [
+    {"name": "LLMRAGContextRecall"},      # 评估检索完整性（是否遗漏信息）
+    {"name": "LLMRAGContextPrecision"}    # 评估检索排序质量（相关的是否靠前）
+]
+```
+
+**检索系统优化**:
+```python
+"evals": [
+    {"name": "LLMRAGContextRelevancy"},   # 评估相关性（减少噪声）
+    {"name": "LLMRAGContextRecall"},      # 评估完整性（减少遗漏）
+    {"name": "LLMRAGContextPrecision"}    # 评估排序质量（优化Top-K）
 ]
 ```
 
@@ -418,19 +702,36 @@ config = InputArgs(**{
 
 1. **初始评估**: 使用所有5个指标评估当前系统
 2. **识别问题**:
-   - Faithfulness低 → 答案生成有问题
-   - Context Precision/Recall低 → 检索系统有问题
-   - Answer Relevancy低 → 生成模型跑题
-   - Context Relevancy低 → 检索噪声太多
+   - **Faithfulness 低** → 生成模型产生幻觉，答案不基于上下文
+     - 优化方向：调整生成 prompt、使用更强的模型、增强事实检查
+   - **Answer Relevancy 低** → 答案跑题或包含无关信息
+     - 优化方向：优化生成 prompt、限制答案长度、增强问题理解
+   - **Context Relevancy 低** → 检索引入了大量噪声
+     - 优化方向：优化检索算法、调整相似度阈值、改进 embedding 模型
+   - **Context Recall 低** → 检索遗漏了重要信息
+     - 优化方向：增加检索数量（Top-K）、改进查询重写、扩展知识库
+   - **Context Precision 低** → 相关文档排序靠后
+     - 优化方向：优化排序算法、调整 reranker、改进相关性计算
 3. **针对性优化**: 根据问题调整相应组件
 4. **重新评估**: 验证优化效果
+5. **持续监控**: 在生产环境持续监控关键指标（Faithfulness, Answer Relevancy, Context Relevancy）
 
 ### 4. 注意事项
 
-- **LLM依赖**: 所有指标都依赖LLM API，需要配置正确
-- **成本考虑**: 评估会产生API调用成本，建议抽样评估
-- **数据质量**: 输入数据质量会影响评估结果
-- **Ground Truth**: Context Recall需要标准答案，主要用于评估阶段
+- **LLM依赖**: 所有指标都依赖 LLM API，需要配置正确的 API key 和 endpoint
+- **Embedding 依赖**: Answer Relevancy 需要 embedding API（如 OpenAI 的 text-embedding-3-large）
+- **成本考虑**: 评估会产生 API 调用成本，建议：
+  - 开发阶段：小样本抽样评估（如 50-100 条）
+  - 生产阶段：只使用关键指标（Faithfulness, Answer Relevancy, Context Relevancy）
+  - 评估阶段：全量评估所有指标
+- **数据质量**: 输入数据质量会影响评估结果，确保：
+  - 问题清晰明确
+  - 上下文列表格式正确（字符串数组）
+  - 参考答案准确（Context Recall/Precision 需要）
+- **Reference 要求**:
+  - Context Recall 和 Context Precision **必须**有 reference
+  - 其他三个指标不需要 reference
+  - Reference 主要用于评估阶段，生产环境通常不需要
 
 ## 💡 示例场景
 

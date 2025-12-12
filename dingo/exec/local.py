@@ -113,6 +113,11 @@ class LocalExecutor(ExecProto):
                     for field_key, eval_detail_list in result_info.eval_details.items():
                         if field_key not in self.summary.type_ratio:
                             self.summary.type_ratio[field_key] = {}
+
+                        # 收集指标分数（用于RAG等评估场景）
+                        for eval_detail in eval_detail_list:
+                            if eval_detail.score is not None and eval_detail.metric:
+                                self.summary.add_metric_score(eval_detail.metric, eval_detail.score)
                         # 遍历 List[EvalDetail]
                         for eval_detail in eval_detail_list:
                             # 获取label列表
@@ -237,6 +242,9 @@ class LocalExecutor(ExecProto):
                 new_summary.type_ratio[field_name][eval_details] = round(
                     new_summary.type_ratio[field_name][eval_details] / new_summary.total, 6
                 )
+
+        # 计算指标分数的平均值、最小值、最大值、标准差等
+        new_summary.calculate_metrics_score_averages()
 
         new_summary.finish_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         return new_summary
