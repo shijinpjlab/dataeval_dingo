@@ -184,6 +184,10 @@ class LocalExecutor(ExecProto):
             # Execute evaluation
             tmp: EvalDetail = model.eval(Data(**map_data))
 
+            # 收集指标分数（如果有）
+            if tmp.score is not None:
+                self.summary.add_metric_score(model.__class__.__name__, tmp.score)
+
             # 直接添加EvalDetail到列表中，不再merge
             eval_detail_list.append(tmp)
 

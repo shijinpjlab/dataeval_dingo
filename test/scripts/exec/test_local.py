@@ -116,3 +116,152 @@ class TestLocal:
         result = executor.execute()
         assert all([item in result.type_ratio.get('content') for item in ["QUALITY_BAD_EFFECTIVENESS.RuleColonEnd",
                                                            "QUALITY_BAD_EFFECTIVENESS.RuleSpecialCharacter"]])
+
+    def test_metrics_score_collection_with_scores(self):
+        """测试带有分数的指标评估时，summary 正确收集和计算分数"""
+
+        # 不依赖真实的数据文件和 API，直接测试 score 收集逻辑
+        from dingo.io.output.summary_model import SummaryModel
+
+        # 创建一个 summary 并添加分数
+        summary = SummaryModel(
+            task_name="test_rag",
+            total=3,
+            num_good=3,
+            num_bad=0
+        )
+
+        # 手动模拟评估结果（因为实际 API 调用需要真实的 key）
+        summary.add_metric_score("LLMRAGFaithfulness", 8.5)
+        summary.add_metric_score("LLMRAGFaithfulness", 9.0)
+        summary.add_metric_score("LLMRAGFaithfulness", 7.5)
+
+        # 创建 executor 并调用 summarize
+        executor = LocalExecutor({})
+        result = executor.summarize(summary)
+
+        # 验证 metrics_score_stats 存在
+        assert "metrics_score_stats" in result.to_dict()
+
+        # 验证统计信息正确
+        stats = result.metrics_score_stats["LLMRAGFaithfulness"]
+        assert stats["score_average"] == 8.33
+        assert stats["score_min"] == 7.5
+        assert stats["score_max"] == 9.0
+        assert stats["score_count"] == 3
+
+        # 验证 summary 方法
+        score_summary = result.get_metrics_score_summary()
+        assert "LLMRAGFaithfulness" in score_summary
+        assert score_summary["LLMRAGFaithfulness"] == 8.33
+
+        # 验证总平均分
+        overall_avg = result.get_metrics_overall_score_average()
+        assert overall_avg == 8.33
+
+    def test_metrics_score_collection_without_scores(self):
+        """测试没有分数的指标评估时，summary 中没有分数统计"""
+        # 使用 Rule 评估（这些指标不返回 score）
+        input_data = {
+            "input_path": "test/data/test_local_jsonl.jsonl",
+            "dataset": {
+                "source": "local",
+                "format": "jsonl"
+            },
+            "executor": {
+                "result_save": {
+                    "good": True,
+                    "bad": True,
+                    "all_labels": True
+                },
+                "end_index": 2
+            },
+            "evaluator": [
+                {
+                    "fields": {"content": "content"},
+                    "evals": [
+                        {"name": "RuleColonEnd"},
+                        {"name": "RuleSpecialCharacter"}
+                    ]
+                }
+            ]
+        }
+
+        input_args = InputArgs(**input_data)
+        executor = Executor.exec_map["local"](input_args)
+        result = executor.execute()
+
+        # 验证没有 metrics_score_stats（因为 Rule 评估器不返回 score）
+        result_dict = result.to_dict()
+        assert "metrics_score_stats" not in result_dict
+        assert "metrics_score_summary" not in result_dict
+        assert "metrics_overall_score_average" not in result_dict
+
+    def test_metrics_score_collection_mixed(self):
+        """测试混合场景：部分指标有分数，部分没有"""
+        from dingo.io.output.summary_model import SummaryModel
+
+        # 创建一个 summary
+        summary = SummaryModel(
+            task_name="test_mixed",
+            total=10,
+            num_good=8,
+            num_bad=2
+        )
+
+        # 只添加一个指标的分数（模拟混合场景）
+        summary.add_metric_score("MetricWithScore", 8.0)
+        summary.add_metric_score("MetricWithScore", 9.0)
+        # 注意：没有为其他指标添加分数
+
+        # 创建 executor 并调用 summarize
+        executor = LocalExecutor({})
+        result = executor.summarize(summary)
+
+        # 验证有 metrics_score_stats
+        result_dict = result.to_dict()
+        assert "metrics_score_stats" in result_dict
+        assert "MetricWithScore" in result.metrics_score_stats
+
+        # 验证统计信息
+        stats = result.metrics_score_stats["MetricWithScore"]
+        assert stats["score_average"] == 8.5
+        assert stats["score_count"] == 2
+
+        # 验证只有一个指标
+        assert len(result.metrics_score_stats) == 1
+
+    def test_summarize_calculates_score_averages(self):
+        """测试 summarize 方法会自动调用 calculate_metrics_score_averages"""
+        from dingo.io.output.summary_model import SummaryModel
+
+        # 创建一个 summary
+        summary = SummaryModel(
+            task_name="test_task",
+            total=10,
+            num_good=8,
+            num_bad=2
+        )
+
+        # 添加一些分数
+        summary.add_metric_score("TestMetric1", 8.0)
+        summary.add_metric_score("TestMetric1", 9.0)
+        summary.add_metric_score("TestMetric2", 7.0)
+        summary.add_metric_score("TestMetric2", 6.0)
+
+        # 创建 executor 并调用 summarize
+        executor = LocalExecutor({})
+        result = executor.summarize(summary)
+
+        # 验证统计已计算
+        assert "TestMetric1" in result.metrics_score_stats
+        assert "TestMetric2" in result.metrics_score_stats
+
+        # 验证 scores 列表已被删除（calculate_metrics_score_averages 会删除它）
+        assert "scores" not in result.metrics_score_stats["TestMetric1"]
+        assert "scores" not in result.metrics_score_stats["TestMetric2"]
+
+        # 验证统计值正确
+        assert result.metrics_score_stats["TestMetric1"]["score_average"] == 8.5
+        assert result.metrics_score_stats["TestMetric2"]["score_average"] == 6.5
+        assert result.get_metrics_overall_score_average() == 7.5

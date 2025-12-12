@@ -159,7 +159,7 @@ executor = Executor.exec_map["local"](input_args)
 summary = executor.execute()
 
 # 查看结果
-print(f"总平均分: {summary.get_overall_score_average()}")
+print(f"总平均分: {summary.get_metrics_overall_score_average()}")
 print(f"各指标平均分: {summary.get_metrics_score_summary()}")
 ```
 
@@ -331,7 +331,7 @@ result.eval_details.reason = "答案中包含未被上下文支持的陈述：'P
     "LLMRAGFaithfulness": 9.94,
     "LLMRAGAnswerRelevancy": 7.46
   },
-  "overall_score_average": 8.7
+  "metrics_overall_score_average": 8.7
 }
 ```
 
@@ -339,7 +339,7 @@ result.eval_details.reason = "答案中包含未被上下文支持的陈述：'P
 
 ```python
 # 总平均分
-print(f"总平均分: {summary.get_overall_score_average()}")
+print(f"总平均分: {summary.get_metrics_overall_score_average()}")
 
 # 各指标平均分
 for metric_name, avg_score in summary.get_metrics_score_summary().items():
