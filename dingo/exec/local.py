@@ -114,19 +114,17 @@ class LocalExecutor(ExecProto):
                         if field_key not in self.summary.type_ratio:
                             self.summary.type_ratio[field_key] = {}
 
-                        # 收集指标分数（用于RAG等评估场景）
+                        # 遍历 List[EvalDetail]，同时收集指标分数和标签
                         for eval_detail in eval_detail_list:
+                            # 收集指标分数（用于RAG等评估场景）
                             if eval_detail.score is not None and eval_detail.metric:
                                 self.summary.add_metric_score(eval_detail.metric, eval_detail.score)
-                        # 遍历 List[EvalDetail]
-                        for eval_detail in eval_detail_list:
-                            # 获取label列表
+
+                            # 收集标签统计
                             label_list = eval_detail.label if eval_detail.label else []
                             for label in label_list:
-                                if label not in self.summary.type_ratio[field_key]:
-                                    self.summary.type_ratio[field_key][label] = 1
-                                else:
-                                    self.summary.type_ratio[field_key][label] += 1
+                                self.summary.type_ratio[field_key].setdefault(label, 0)
+                                self.summary.type_ratio[field_key][label] += 1
 
                     if result_info.eval_status:
                         self.summary.num_bad += 1
@@ -183,10 +181,6 @@ class LocalExecutor(ExecProto):
 
             # Execute evaluation
             tmp: EvalDetail = model.eval(Data(**map_data))
-
-            # 收集指标分数（如果有）
-            if tmp.score is not None:
-                self.summary.add_metric_score(model.__class__.__name__, tmp.score)
 
             # 直接添加EvalDetail到列表中，不再merge
             eval_detail_list.append(tmp)

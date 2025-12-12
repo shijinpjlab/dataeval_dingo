@@ -74,13 +74,14 @@ class SummaryModel(BaseModel):
         """
         计算所有指标分数的总平均分
 
+        注意：包含所有指标（即使平均分为 0），因为 0 分也是一个重要的评估信号
+
         Returns:
             总平均分
         """
         averages = [
             stats.get('score_average', 0.0)
             for stats in self.metrics_score_stats.values()
-            if stats.get('score_average', 0.0) > 0
         ]
         return round(sum(averages) / len(averages), 2) if averages else 0.0
 

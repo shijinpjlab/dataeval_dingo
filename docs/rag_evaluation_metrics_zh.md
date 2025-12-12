@@ -61,7 +61,7 @@ result = LLMRAGFaithfulness.eval(data)
 
 # 查看结果
 print(f"分数: {result.score}/10")
-print(f"通过: {not result.error_status}")
+print(f"通过: {not result.status}")  # status=False 表示通过
 print(f"理由: {result.reason[0]}")
 ```
 
@@ -273,31 +273,36 @@ Dataset 方式使用 JSONL 文件，推荐字段名为：`user_input`, `response
 ```python
 result = LLMRAGFaithfulness.eval(data)
 
-# 基本信息
-result.eval_details.score        # 分数 (0-10，浮点数)
-result.eval_status               # 是否未通过 (True=未通过, False=通过)
-result.label                     # 标签 (QUALITY_GOOD / QUALITY_BAD_...)
-result.eval_details.reason       # 评估理由
+# 基本信息 (EvalDetail 对象)
+result.metric                    # 指标名称 (如 "LLMRAGFaithfulness")
+result.score                     # 分数 (0-10，浮点数)
+result.status                    # 是否未通过 (True=未通过, False=通过)
+result.label                     # 标签列表 (如 ["QUALITY_GOOD.FAITHFULNESS_PASS"])
+result.reason                    # 评估理由列表 (如 ["答案完全基于上下文..."])
 
 # 示例
-print(f"分数: {result.eval_details.score}/10")
-print(f"通过: {not result.eval_status}")
-print(f"理由: {result.eval_details.reason}")
+print(f"指标: {result.metric}")
+print(f"分数: {result.score}/10")
+print(f"通过: {not result.status}")  # status=False 表示通过
+print(f"标签: {result.label}")
+print(f"理由: {result.reason}")
 ```
 
 **输出示例**：
 ```python
 # 通过的情况
-result.eval_details.score = 9.2
-result.eval_status = False  # False 表示通过
-result.label = "QUALITY_GOOD.FAITHFULNESS_PASS"
-result.eval_details.reason = "答案完全基于上下文，未发现幻觉。所有陈述都有支持。"
+result.metric = "LLMRAGFaithfulness"
+result.score = 9.2
+result.status = False  # False 表示通过
+result.label = ["QUALITY_GOOD.FAITHFULNESS_PASS"]
+result.reason = ["答案完全基于上下文，未发现幻觉。所有陈述都有支持。"]
 
 # 未通过的情况
-result.eval_details.score = 3.5
-result.eval_status = True  # True 表示未通过
-result.label = "QUALITY_BAD.FAITHFULNESS_FAIL"
-result.eval_details.reason = "答案中包含未被上下文支持的陈述：'Python是第一个面向对象语言'"
+result.metric = "LLMRAGFaithfulness"
+result.score = 3.5
+result.status = True  # True 表示未通过
+result.label = ["QUALITY_BAD.FAITHFULNESS_FAIL"]
+result.reason = ["答案中包含未被上下文支持的陈述：'Python是第一个面向对象语言'"]
 ```
 
 ### Dataset 方式输出
