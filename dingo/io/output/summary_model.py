@@ -105,10 +105,12 @@ class SummaryModel(BaseModel):
             'type_ratio': self.type_ratio,
         }
 
-        # 如果有指标分数统计，添加到输出中
+        # 如果有指标分数统计，以层级结构添加到输出中
         if self.metrics_score_stats:
-            result['metrics_score_stats'] = self.metrics_score_stats
-            result['metrics_score_summary'] = self.get_metrics_score_summary()
-            result['metrics_score_overall_average'] = self.get_metrics_score_overall_average()
+            result['metrics_score'] = {
+                'stats': self.metrics_score_stats,
+                'summary': self.get_metrics_score_summary(),
+                'overall_average': self.get_metrics_score_overall_average()
+            }
 
         return result

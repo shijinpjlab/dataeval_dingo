@@ -184,16 +184,17 @@ class TestSummaryModel:
         assert result["task_id"] == "test_008"
         assert result["total"] == 10
 
-        # 验证分数统计字段
-        assert "metrics_score_stats" in result
-        assert "metrics_score_summary" in result
-        assert "metrics_score_overall_average" in result
+        # 验证分数统计字段（层级结构）
+        assert "metrics_score" in result
+        assert "stats" in result["metrics_score"]
+        assert "summary" in result["metrics_score"]
+        assert "overall_average" in result["metrics_score"]
 
         # 验证分数统计内容
-        assert "Metric1" in result["metrics_score_stats"]
-        assert result["metrics_score_stats"]["Metric1"]["score_average"] == 8.5
-        assert result["metrics_score_summary"]["Metric1"] == 8.5
-        assert result["metrics_score_overall_average"] == 8.5
+        assert "Metric1" in result["metrics_score"]["stats"]
+        assert result["metrics_score"]["stats"]["Metric1"]["score_average"] == 8.5
+        assert result["metrics_score"]["summary"]["Metric1"] == 8.5
+        assert result["metrics_score"]["overall_average"] == 8.5
 
     def test_to_dict_without_scores(self):
         """测试 to_dict() 在没有分数时的输出"""
@@ -215,9 +216,7 @@ class TestSummaryModel:
         assert result["total"] == 10
 
         # 验证没有分数统计字段
-        assert "metrics_score_stats" not in result
-        assert "metrics_score_summary" not in result
-        assert "metrics_score_overall_average" not in result
+        assert "metrics_score" not in result
 
     def test_multiple_metrics_different_score_counts(self):
         """测试不同指标有不同数量的分数"""

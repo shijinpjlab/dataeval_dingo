@@ -206,6 +206,10 @@ def run_rag_evaluation():
     print_metrics_summary(summary)
 
     print(f"\n💾 详细结果已保存到: {summary.output_path}/summary.json")
+    print("    metrics_score (层级结构):")
+    print("      - stats: 每个指标的详细统计")
+    print("      - summary: 各指标平均分汇总")
+    print("      - overall_average: 总平均分")
 
     return summary
 

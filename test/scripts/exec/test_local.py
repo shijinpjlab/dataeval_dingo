@@ -140,8 +140,12 @@ class TestLocal:
         executor = LocalExecutor({})
         result = executor.summarize(summary)
 
-        # 验证 metrics_score_stats 存在
-        assert "metrics_score_stats" in result.to_dict()
+        # 验证 metrics_score 存在（层级结构）
+        result_dict = result.to_dict()
+        assert "metrics_score" in result_dict
+        assert "stats" in result_dict["metrics_score"]
+        assert "summary" in result_dict["metrics_score"]
+        assert "overall_average" in result_dict["metrics_score"]
 
         # 验证统计信息正确
         stats = result.metrics_score_stats["LLMRAGFaithfulness"]
@@ -191,11 +195,9 @@ class TestLocal:
         executor = Executor.exec_map["local"](input_args)
         result = executor.execute()
 
-        # 验证没有 metrics_score_stats（因为 Rule 评估器不返回 score）
+        # 验证没有 metrics_score（因为 Rule 评估器不返回 score）
         result_dict = result.to_dict()
-        assert "metrics_score_stats" not in result_dict
-        assert "metrics_score_summary" not in result_dict
-        assert "metrics_score_overall_average" not in result_dict
+        assert "metrics_score" not in result_dict
 
     def test_metrics_score_collection_mixed(self):
         """测试混合场景：部分指标有分数，部分没有"""
@@ -218,9 +220,9 @@ class TestLocal:
         executor = LocalExecutor({})
         result = executor.summarize(summary)
 
-        # 验证有 metrics_score_stats
+        # 验证有 metrics_score
         result_dict = result.to_dict()
-        assert "metrics_score_stats" in result_dict
+        assert "metrics_score" in result_dict
         assert "MetricWithScore" in result.metrics_score_stats
 
         # 验证统计信息
