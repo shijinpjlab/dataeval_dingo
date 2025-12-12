@@ -124,7 +124,7 @@ class TestSummaryModel:
         assert score_summary["Metric1"] == 8.5
         assert score_summary["Metric2"] == 6.5
 
-    def test_get_metrics_overall_score_average(self):
+    def test_get_metrics_score_overall_average(self):
         """测试计算总平均分"""
         summary = SummaryModel(
             task_name="test_task",
@@ -141,12 +141,12 @@ class TestSummaryModel:
         summary.calculate_metrics_score_averages()
 
         # 获取总平均分
-        overall_avg = summary.get_metrics_overall_score_average()
+        overall_avg = summary.get_metrics_score_overall_average()
 
         # 验证：(8.5 + 6.0) / 2 = 7.25
         assert overall_avg == 7.25
 
-    def test_get_metrics_overall_score_average_empty(self):
+    def test_get_metrics_score_overall_average_empty(self):
         """测试没有分数时的总平均分"""
         summary = SummaryModel(
             task_name="test_task",
@@ -154,7 +154,7 @@ class TestSummaryModel:
         )
 
         # 没有添加分数
-        overall_avg = summary.get_metrics_overall_score_average()
+        overall_avg = summary.get_metrics_score_overall_average()
 
         # 验证：应该返回 0.0
         assert overall_avg == 0.0
@@ -187,13 +187,13 @@ class TestSummaryModel:
         # 验证分数统计字段
         assert "metrics_score_stats" in result
         assert "metrics_score_summary" in result
-        assert "metrics_overall_score_average" in result
+        assert "metrics_score_overall_average" in result
 
         # 验证分数统计内容
         assert "Metric1" in result["metrics_score_stats"]
         assert result["metrics_score_stats"]["Metric1"]["score_average"] == 8.5
         assert result["metrics_score_summary"]["Metric1"] == 8.5
-        assert result["metrics_overall_score_average"] == 8.5
+        assert result["metrics_score_overall_average"] == 8.5
 
     def test_to_dict_without_scores(self):
         """测试 to_dict() 在没有分数时的输出"""
@@ -217,7 +217,7 @@ class TestSummaryModel:
         # 验证没有分数统计字段
         assert "metrics_score_stats" not in result
         assert "metrics_score_summary" not in result
-        assert "metrics_overall_score_average" not in result
+        assert "metrics_score_overall_average" not in result
 
     def test_multiple_metrics_different_score_counts(self):
         """测试不同指标有不同数量的分数"""
@@ -299,6 +299,6 @@ class TestSummaryModel:
             assert summary.metrics_score_stats[metric]["score_count"] == 10
 
         # 验证总平均分
-        overall_avg = summary.get_metrics_overall_score_average()
+        overall_avg = summary.get_metrics_score_overall_average()
         # 7.0, 8.0, 9.0 循环10次：(7+8+9)*3 + 7 = 79, 79/10 = 7.9
         assert overall_avg == 7.9
