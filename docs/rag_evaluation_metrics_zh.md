@@ -158,9 +158,10 @@ input_args = InputArgs(**input_data)
 executor = Executor.exec_map["local"](input_args)
 summary = executor.execute()
 
-# 查看结果
-print(f"总平均分: {summary.get_metrics_score_overall_average()}")
-print(f"各指标平均分: {summary.get_metrics_score_summary()}")
+# 查看结果（需要指定字段组）
+field_key = "user_input,response,retrieved_contexts,reference"
+print(f"总平均分: {summary.get_metrics_score_overall_average(field_key)}")
+print(f"各指标平均分: {summary.get_metrics_score_summary(field_key)}")
 ```
 
 ## 📋 数据格式
@@ -314,53 +315,85 @@ result.reason = ["答案中包含未被上下文支持的陈述：'Python是第�
 ```json
 {
   "task_name": "rag_evaluation",
-  "total": 50,
-  "num_good": 48,
+  "total": 30,
+  "num_good": 28,
   "num_bad": 2,
-  "score": 96.0,
+  "score": 93.3,
+  "type_ratio": {
+    "user_input,response,retrieved_contexts,reference": {
+      "good": 0.933333,
+      "bad": 0.066667
+    }
+  },
   "metrics_score": {
-    "stats": {
-      "LLMRAGFaithfulness": {
-        "score_average": 9.94,
-        "score_min": 8.33,
-        "score_max": 10.0,
-        "score_count": 50,
-        "score_std_dev": 0.3
+    "user_input,response,retrieved_contexts,reference": {
+      "stats": {
+        "LLMRAGFaithfulness": {
+          "score_average": 8.36,
+          "score_count": 30,
+          "score_min": 1.67,
+          "score_max": 10.0,
+          "score_std_dev": 2.53
+        },
+        "LLMRAGContextPrecision": {
+          "score_average": 9.67,
+          "score_count": 30,
+          "score_min": 0.0,
+          "score_max": 10.0,
+          "score_std_dev": 1.8
+        },
+        "LLMRAGContextRecall": {
+          "score_average": 8.42,
+          "score_count": 30,
+          "score_min": 2.5,
+          "score_max": 10.0,
+          "score_std_dev": 2.61
+        },
+        "LLMRAGContextRelevancy": {
+          "score_average": 9.0,
+          "score_count": 30,
+          "score_min": 0.0,
+          "score_max": 10.0,
+          "score_std_dev": 2.38
+        },
+        "LLMRAGAnswerRelevancy": {
+          "score_average": 5.77,
+          "score_count": 30,
+          "score_min": 0.0,
+          "score_max": 7.82,
+          "score_std_dev": 2.09
+        }
       },
-      "LLMRAGAnswerRelevancy": {
-        "score_average": 7.46,
-        "score_min": 5.37,
-        "score_max": 9.15,
-        "score_count": 50,
-        "score_std_dev": 0.93
-      }
-    },
-    "summary": {
-      "LLMRAGFaithfulness": 9.94,
-      "LLMRAGAnswerRelevancy": 7.46
-    },
-    "overall_average": 8.7
+      "summary": {
+        "LLMRAGFaithfulness": 8.36,
+        "LLMRAGContextPrecision": 9.67,
+        "LLMRAGContextRecall": 8.42,
+        "LLMRAGContextRelevancy": 9.0,
+        "LLMRAGAnswerRelevancy": 5.77
+      },
+      "overall_average": 8.24
+    }
   }
 }
 ```
 
-**访问统计信息**：
+### 多字段组示例
 
-```python
-# 总平均分
-print(f"总平均分: {summary.get_metrics_score_overall_average()}")
-
-# 各指标平均分
-for metric_name, avg_score in summary.get_metrics_score_summary().items():
-    print(f"{metric_name}: {avg_score}/10")
-
-# 详细统计
-for metric_name, stats in summary.metrics_score_stats.items():
-    print(f"{metric_name}:")
-    print(f"  平均: {stats['score_average']}")
-    print(f"  最小: {stats['score_min']}")
-    print(f"  最大: {stats['score_max']}")
-    print(f"  标准差: {stats.get('score_std_dev', 0)}")
+```json
+{
+  "metrics_score": {
+    "user_input,response": {
+      "stats": {...},
+      "summary": {...},
+      "overall_average": 7.8
+    },
+    "retrieved_contexts,reference": {
+      "stats": {...},
+      "summary": {...},
+      "overall_average": 9.1
+    }
+  }
+}
 ```
 
 ## ⚙️ 执行器支持
@@ -407,12 +440,14 @@ executor = Executor.exec_map["spark"](
 summary = executor.execute()
 
 # 获取指标统计（输出格式与 Local 完全一致）
-print(f"总平均分: {summary.get_metrics_score_overall_average()}")
-print(f"各指标汇总: {summary.get_metrics_score_summary()}")
+field_key = "user_input,response,retrieved_contexts,reference"
+print(f"总平均分: {summary.get_metrics_score_overall_average(field_key)}")
+print(f"各指标汇总: {summary.get_metrics_score_summary(field_key)}")
 
 # to_dict() 也包含完整的 metrics_score 层级结构
 result = summary.to_dict()
-print(result['metrics_score']['overall_average'])
+print(result['metrics_score'][field_key]['overall_average'])
+print(result['metrics_score'][field_key]['summary'])
 ```
 
 ## 🔧 配置阈值和参数
@@ -779,6 +814,10 @@ Context Precision = Σ(Precision@k × v_k) / top K 中相关项总数
 
 ### 4. 注意事项
 
+- **字段分组**:
+  - `metrics_score` 按字段组（field_key）组织，访问时需指定字段组名
+  - 字段组名由评估器配置中的 `fields` 值拼接生成，如 `"user_input,response"`
+  - 如果不确定字段组名，可遍历 `summary.metrics_score_stats.items()` 获取所有字段组
 - **LLM依赖**: 所有指标都依赖 LLM API，需要配置正确的 API key 和 endpoint
 - **Embedding 依赖**: Answer Relevancy 需要 embedding API（如 OpenAI 的 text-embedding-3-large）
 - **成本考虑**: 评估会产生 API 调用成本，建议：
