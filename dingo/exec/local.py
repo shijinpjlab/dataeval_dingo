@@ -113,15 +113,18 @@ class LocalExecutor(ExecProto):
                     for field_key, eval_detail_list in result_info.eval_details.items():
                         if field_key not in self.summary.type_ratio:
                             self.summary.type_ratio[field_key] = {}
-                        # 遍历 List[EvalDetail]
+
+                        # 遍历 List[EvalDetail]，同时收集指标分数和标签
                         for eval_detail in eval_detail_list:
-                            # 获取label列表
+                            # 收集指标分数
+                            if eval_detail.score is not None and eval_detail.metric:
+                                self.summary.add_metric_score(eval_detail.metric, eval_detail.score)
+
+                            # 收集标签统计
                             label_list = eval_detail.label if eval_detail.label else []
                             for label in label_list:
-                                if label not in self.summary.type_ratio[field_key]:
-                                    self.summary.type_ratio[field_key][label] = 1
-                                else:
-                                    self.summary.type_ratio[field_key][label] += 1
+                                self.summary.type_ratio[field_key].setdefault(label, 0)
+                                self.summary.type_ratio[field_key][label] += 1
 
                     if result_info.eval_status:
                         self.summary.num_bad += 1
@@ -237,6 +240,9 @@ class LocalExecutor(ExecProto):
                 new_summary.type_ratio[field_name][eval_details] = round(
                     new_summary.type_ratio[field_name][eval_details] / new_summary.total, 6
                 )
+
+        # 计算指标分数的平均值、最小值、最大值、标准差等
+        new_summary.calculate_metrics_score_averages()
 
         new_summary.finish_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         return new_summary

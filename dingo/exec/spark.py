@@ -76,6 +76,63 @@ class SparkExecutor(ExecProto):
         """Load and return the RDD data."""
         return self.spark_rdd
 
+    @staticmethod
+    def _aggregate_eval_details(acc, item):
+        """聚合单个 item 的 eval_details 到累加器中，同时收集 scores"""
+        eval_details_dict = item.get('eval_details', {})
+
+        # 遍历第一层：字段名，第二层是 List[EvalDetail] (序列化为 list of dicts)
+        for field_key, eval_detail_list in eval_details_dict.items():
+            # 初始化字段的统计数据
+            if field_key not in acc['label_counts']:
+                acc['label_counts'][field_key] = {}
+
+            # 遍历 List[EvalDetail]
+            for eval_detail in eval_detail_list:
+                # 收集指标分数（用于RAG等评估场景）
+                score = eval_detail.get('score') if isinstance(eval_detail, dict) else getattr(eval_detail, 'score', None)
+                metric = eval_detail.get('metric') if isinstance(eval_detail, dict) else getattr(eval_detail, 'metric', None)
+
+                if score is not None and metric:
+                    if metric not in acc['metric_scores']:
+                        acc['metric_scores'][metric] = []
+                    acc['metric_scores'][metric].append(score)
+
+                # 收集标签统计
+                label_list = eval_detail.get('label', []) if isinstance(eval_detail, dict) else getattr(eval_detail, 'label', [])
+                if label_list:
+                    # 统计每个 label 的出现次数
+                    for label in label_list:
+                        if label not in acc['label_counts'][field_key]:
+                            acc['label_counts'][field_key][label] = 1
+                        else:
+                            acc['label_counts'][field_key][label] += 1
+
+        return acc
+
+    @staticmethod
+    def _merge_eval_details(acc1, acc2):
+        """合并两个累加器"""
+        # 合并 label 统计
+        for field_key, label_dict in acc2['label_counts'].items():
+            if field_key not in acc1['label_counts']:
+                acc1['label_counts'][field_key] = label_dict.copy()
+            else:
+                for label, count in label_dict.items():
+                    if label not in acc1['label_counts'][field_key]:
+                        acc1['label_counts'][field_key][label] = count
+                    else:
+                        acc1['label_counts'][field_key][label] += count
+
+        # 合并 metric scores
+        for metric, scores in acc2['metric_scores'].items():
+            if metric not in acc1['metric_scores']:
+                acc1['metric_scores'][metric] = scores.copy()
+            else:
+                acc1['metric_scores'][metric].extend(scores)
+
+        return acc1
+
     def execute(self) -> SummaryModel:
         """Main execution method for Spark evaluation."""
         create_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
@@ -211,59 +268,25 @@ class SparkExecutor(ExecProto):
 
         统计所有评估结果中每个字段下每个 label 的出现次数，
         然后除以总数得到比例，填充到 summary.type_ratio 中。
+        同时收集指标分数用于统计。
         """
         new_summary = copy.deepcopy(summary)
         if new_summary.total == 0:
             return new_summary
 
-        # 使用 Spark 聚合操作统计 eval_details
+        # 使用 Spark 聚合操作统计 eval_details 和收集 scores
         # data_info_list 的每个元素是 Dict，包含 eval_details 字段
-        def aggregate_eval_detailss(acc, item):
-            """聚合单个 item 的 eval_details 到累加器中"""
-            eval_details_dict = item.get('eval_details', {})
-
-            # 遍历第一层：字段名，第二层是 List[EvalDetail] (序列化为 list of dicts)
-            for field_key, eval_detail_list in eval_details_dict.items():
-                if field_key not in acc:
-                    acc[field_key] = {}
-
-                # 遍历 List[EvalDetail]
-                for eval_detail in eval_detail_list:
-                    # 从 EvalDetail 的 label 列表中获取错误类型
-                    label_list = eval_detail.get('label', []) if isinstance(eval_detail, dict) else eval_detail.label
-                    if label_list:
-                        # 统计每个 label 的出现次数
-                        for label in label_list:
-                            if label not in acc[field_key]:
-                                acc[field_key][label] = 1
-                            else:
-                                acc[field_key][label] += 1
-
-            return acc
-
-        def merge_eval_detailss(acc1, acc2):
-            """合并两个累加器"""
-            for field_key, label_dict in acc2.items():
-                if field_key not in acc1:
-                    acc1[field_key] = label_dict.copy()
-                else:
-                    for label, count in label_dict.items():
-                        if label not in acc1[field_key]:
-                            acc1[field_key][label] = count
-                        else:
-                            acc1[field_key][label] += count
-            return acc1
-
-        # 使用 aggregate 聚合所有 eval_details
-        # data_info_list 在 execute 中已经被 persist() 并保存为实例变量
         if hasattr(self, 'data_info_list') and self.data_info_list:
-            type_ratio_counts = self.data_info_list.aggregate(
-                {},  # 初始累加器
-                aggregate_eval_detailss,  # 聚合单个元素
-                merge_eval_detailss  # 合并累加器
+            aggregated_results = self.data_info_list.aggregate(
+                {'label_counts': {}, 'metric_scores': {}},  # 初始累加器
+                SparkExecutor._aggregate_eval_details,  # 聚合单个元素
+                SparkExecutor._merge_eval_details  # 合并累加器
             )
+            type_ratio_counts = aggregated_results['label_counts']
+            metric_scores = aggregated_results['metric_scores']
         else:
             type_ratio_counts = {}
+            metric_scores = {}
 
         # 将计数转换为比例
         new_summary.type_ratio = {}
@@ -273,6 +296,14 @@ class SparkExecutor(ExecProto):
                 new_summary.type_ratio[field_name][eval_details] = round(
                     type_ratio_counts[field_name][eval_details] / new_summary.total, 6
                 )
+
+        # 添加收集到的 metric scores 到 summary
+        for metric_name, scores in metric_scores.items():
+            for score in scores:
+                new_summary.add_metric_score(metric_name, score)
+
+        # 计算 metrics 的平均分等统计信息
+        new_summary.calculate_metrics_score_averages()
 
         new_summary.finish_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         return new_summary

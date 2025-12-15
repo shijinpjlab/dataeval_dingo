@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -17,8 +17,80 @@ class SummaryModel(BaseModel):
     total: int = 0
     type_ratio: Dict[str, Dict[str, int]] = {}
 
-    def to_dict(self):
+    # 新增：指标分数统计（用于RAG等评估场景）
+    metrics_score_stats: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+
+    def add_metric_score(self, metric_name: str, score: float):
+        """
+        添加指标分数到统计中
+
+        Args:
+            metric_name: 指标名称（如 LLMRAGFaithfulness）
+            score: 分数值
+        """
+        if metric_name not in self.metrics_score_stats:
+            self.metrics_score_stats[metric_name] = {
+                'scores': [],
+                'score_average': 0.0,
+                'score_count': 0,
+                'score_min': None,
+                'score_max': None
+            }
+
+        self.metrics_score_stats[metric_name]['scores'].append(score)
+        self.metrics_score_stats[metric_name]['score_count'] += 1
+
+    def calculate_metrics_score_averages(self):
+        """
+        计算所有指标分数的平均值、最小值、最大值、标准差
+
+        注意：为保证精度，先计算未四舍五入的平均值用于方差计算，
+        最后再对平均值和标准差进行四舍五入
+        """
+        for metric_name, stats in self.metrics_score_stats.items():
+            scores = stats['scores']
+            if scores:
+                # 先计算未四舍五入的平均值（用于方差计算）
+                mean = sum(scores) / len(scores)
+                stats['score_average'] = round(mean, 2)
+                stats['score_min'] = round(min(scores), 2)
+                stats['score_max'] = round(max(scores), 2)
+                # 计算标准差（使用未四舍五入的 mean）
+                if len(scores) > 1:
+                    variance = sum((x - mean) ** 2 for x in scores) / len(scores)
+                    stats['score_std_dev'] = round(variance ** 0.5, 2)
+                # 清理scores列表以减少存储空间（保留统计信息即可）
+                del stats['scores']
+
+    def get_metrics_score_summary(self) -> Dict[str, float]:
+        """
+        获取指标分数汇总（只包含平均值）
+
+        Returns:
+            指标名称到平均分数的映射
+        """
         return {
+            metric_name: stats.get('score_average', 0.0)
+            for metric_name, stats in self.metrics_score_stats.items()
+        }
+
+    def get_metrics_score_overall_average(self) -> float:
+        """
+        计算所有指标分数的总平均分
+
+        注意：包含所有指标（即使平均分为 0），因为 0 分也是一个重要的评估信号
+
+        Returns:
+            总平均分
+        """
+        averages = [
+            stats.get('score_average', 0.0)
+            for stats in self.metrics_score_stats.values()
+        ]
+        return round(sum(averages) / len(averages), 2) if averages else 0.0
+
+    def to_dict(self):
+        result = {
             'task_id': self.task_id,
             'task_name': self.task_name,
             # 'eval_group': self.eval_group,
@@ -32,3 +104,13 @@ class SummaryModel(BaseModel):
             'total': self.total,
             'type_ratio': self.type_ratio,
         }
+
+        # 如果有指标分数统计，以层级结构添加到输出中
+        if self.metrics_score_stats:
+            result['metrics_score'] = {
+                'stats': self.metrics_score_stats,
+                'summary': self.get_metrics_score_summary(),
+                'overall_average': self.get_metrics_score_overall_average()
+            }
+
+        return result
