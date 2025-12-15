@@ -116,7 +116,7 @@ class LocalExecutor(ExecProto):
 
                         # 遍历 List[EvalDetail]，同时收集指标分数和标签
                         for eval_detail in eval_detail_list:
-                            # 收集指标分数（用于RAG等评估场景）
+                            # 收集指标分数
                             if eval_detail.score is not None and eval_detail.metric:
                                 self.summary.add_metric_score(eval_detail.metric, eval_detail.score)
 
