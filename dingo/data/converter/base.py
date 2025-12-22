@@ -261,6 +261,25 @@ class JsonLineConverter(BaseConverter):
         return _convert
 
 
+@BaseConverter.register("excel")
+class ExcelConverter(BaseConverter):
+    """Excel file converter."""
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def convertor(cls, input_args: InputArgs) -> Callable:
+        def _convert(raw: Union[str, Dict]):
+            j = raw
+            if isinstance(raw, str):
+                j = json.loads(raw)
+            data_dict = j
+            return Data(**data_dict)
+
+        return _convert
+
+
 @BaseConverter.register("listjson")
 class ListJsonConverter(BaseConverter):
     """List json file converter."""
