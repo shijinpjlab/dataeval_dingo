@@ -9,12 +9,10 @@ class TestHfDataset:
     def test_hf_dataset_get_data(self):
         path = "chupei/format-text"
         ri = InputArgs(
-            eval_group='default',
             input_path=path,
             output_path='data/outputs/',
-            data_format='plaintext',
-            column_content='text',
-            custom_config=None
+            dataset={"source": "hugging_face", "format": "plaintext"},
+            evaluator=[{"fields": {"content": "text"}, "evals": [{"name": "RuleColonEnd"}, {"name": "RuleContentNull"}]}]
         )
         source = HuggingFaceSource(input_args=ri)
         dataset: HuggingFaceDataset = HuggingFaceDataset(source=source, name="chupei_text")
@@ -25,13 +23,10 @@ class TestHfDataset:
     def test_hf_dataset_get_data_1(self):
         path = "chupei/format-json"
         ri = InputArgs(
-            eval_group='default',
             input_path=path,
             output_path='data/outputs/',
-            data_format='json',
-            column_content='prediction',
-            column_prompt='origin_prompt',
-            custom_config=None
+            dataset={"source": "hugging_face", "format": "json"},
+            evaluator=[{"fields": {"content": "prediction", "prompt": "origin_prompt"}, "evals": [{"name": "RuleColonEnd"}, {"name": "RuleContentNull"}]}]
         )
         source = HuggingFaceSource(input_args=ri)
         dataset: HuggingFaceDataset = HuggingFaceDataset(source=source, name="chupei_json")
@@ -42,12 +37,10 @@ class TestHfDataset:
     def test_hf_dataset_get_data_2(self):
         path = "chupei/format-jsonl"
         ri = InputArgs(
-            eval_group='default',
             input_path=path,
             output_path='data/outputs/',
-            data_format='jsonl',
-            column_content='content',
-            custom_config=None
+            dataset={"source": "hugging_face", "format": "jsonl"},
+            evaluator=[{"fields": {"content": "content"}, "evals": [{"name": "RuleColonEnd"}, {"name": "RuleContentNull"}]}]
         )
         source = HuggingFaceSource(input_args=ri)
         dataset: HuggingFaceDataset = HuggingFaceDataset(source=source, name="chupei_jsonl")
@@ -58,13 +51,10 @@ class TestHfDataset:
     def test_hf_dataset_get_data_3(self):
         path = "chupei/format-listjson"
         ri = InputArgs(
-            eval_group='default',
             input_path=path,
             output_path='./test/outputs/',
-            data_format='listjson',
-            column_content='output',
-            column_prompt="instruction",
-            custom_config=None
+            dataset={"source": "hugging_face", "format": "listjson"},
+            evaluator=[{"fields": {"content": "output", "prompt": "instruction"}, "evals": [{"name": "RuleColonEnd"}, {"name": "RuleContentNull"}]}]
         )
         source = HuggingFaceSource(input_args=ri)
         dataset: HuggingFaceDataset = HuggingFaceDataset(source=source, name="chupei_listjson")
@@ -76,12 +66,10 @@ class TestHfDataset:
     def test_hf_dataset_get_data_4(self):
         path = "lmms-lab/LLaVA-OneVision-Data"
         ri = InputArgs(
-            eval_group='default',
             input_path=path,
             output_path='./test/outputs/',
-            data_format='hf-image',
-            column_image=['image'],
-            custom_config=None
+            dataset={"source": "hugging_face", "format": "hf-image"},
+            evaluator=[{"fields": {"image": ["image"]}, "evals": [{"name": "RuleAspectRatio"}, {"name": "RuleImageSize"}]}]
         )
         source = HuggingFaceSource(input_args=ri, config_name='CLEVR-Math(MathV360K)')
         dataset: HuggingFaceDataset = HuggingFaceDataset(source=source, name="LLaVA-OneVision-Data")
@@ -92,13 +80,10 @@ class TestHfDataset:
     def test_hf_dataset_get_data_5(self):
         path = "HuggingFaceM4/Docmatix"
         ri = InputArgs(
-            eval_group='default',
             input_path=path,
             output_path='./test/outputs/',
-            data_format='hf-image',
-            column_image=['images'],
-            custom_config=None,
-            huggingface_split='test'
+            dataset={"source": "hugging_face", "format": "hf-image", "hf_config": {"huggingface_split": "test"}},
+            evaluator=[{"fields": {"image": ["images"]}, "evals": [{"name": "RuleAspectRatio"}, {"name": "RuleImageSize"}]}]
         )
         source = HuggingFaceSource(input_args=ri, config_name='zero-shot-exp')
         dataset: HuggingFaceDataset = HuggingFaceDataset(source=source, name="Docmatix")

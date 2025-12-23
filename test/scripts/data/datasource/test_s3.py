@@ -1,3 +1,4 @@
+import copy
 import json
 import unittest
 from io import BytesIO
@@ -22,9 +23,6 @@ class TestS3DataSource(unittest.TestCase):
             "dataset": {
                 "source": "s3",
                 "format": "jsonl",
-                "field": {
-                    "content": "content"
-                },
                 "s3_config": {
                     "s3_ak": "test_access_key",
                     "s3_sk": "test_secret_key",
@@ -32,7 +30,8 @@ class TestS3DataSource(unittest.TestCase):
                     "s3_bucket": "test-bucket",
                     "s3_addressing_style": "path"
                 }
-            }
+            },
+            "evaluator": [{"fields": {"content": "content"}, "evals": [{"name": "RuleColonEnd"}, {"name": "RuleContentNull"}]}]
         }
 
     def tearDown(self):
@@ -51,7 +50,7 @@ class TestS3DataSource(unittest.TestCase):
 
     def test_init_missing_credentials(self):
         """测试缺少 S3 凭证时抛出异常"""
-        config = self.base_config.copy()
+        config = copy.deepcopy(self.base_config)
         config["dataset"]["s3_config"]["s3_ak"] = ""
 
         input_args = InputArgs(**config)
@@ -63,7 +62,7 @@ class TestS3DataSource(unittest.TestCase):
 
     def test_init_missing_endpoint(self):
         """测试缺少 endpoint 时抛出异常"""
-        config = self.base_config.copy()
+        config = copy.deepcopy(self.base_config)
         config["dataset"]["s3_config"]["s3_endpoint_url"] = ""
 
         input_args = InputArgs(**config)
@@ -112,7 +111,7 @@ class TestS3DataSource(unittest.TestCase):
 
     def test_load_directory_multiple_files(self):
         """测试加载目录中的多个文件"""
-        config = self.base_config.copy()
+        config = copy.deepcopy(self.base_config)
         config["input_path"] = "test/data/"  # 以 / 结尾表示目录
 
         # Mock list_objects 响应
@@ -170,7 +169,7 @@ class TestS3DataSource(unittest.TestCase):
 
     def test_load_plaintext_format(self):
         """测试加载 plaintext 格式"""
-        config = self.base_config.copy()
+        config = copy.deepcopy(self.base_config)
         config["dataset"]["format"] = "plaintext"
 
         # Mock S3 响应
@@ -190,7 +189,7 @@ class TestS3DataSource(unittest.TestCase):
 
     def test_load_unsupported_format_error(self):
         """测试加载不支持的格式时抛出异常"""
-        config = self.base_config.copy()
+        config = copy.deepcopy(self.base_config)
         config["dataset"]["format"] = "json"  # 不支持的格式
 
         with patch('dingo.data.datasource.s3.boto3.client', return_value=self.mock_s3_client):
@@ -216,7 +215,7 @@ class TestS3DataSource(unittest.TestCase):
     def test_different_addressing_styles(self):
         """测试不同的 S3 addressing styles"""
         for style in ["path", "virtual"]:
-            config = self.base_config.copy()
+            config = copy.deepcopy(self.base_config)
             config["dataset"]["s3_config"]["s3_addressing_style"] = style
 
             with patch('dingo.data.datasource.s3.boto3.client') as mock_client:
