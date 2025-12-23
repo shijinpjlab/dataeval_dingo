@@ -1,10 +1,15 @@
+from pathlib import Path
+
 from dingo.config import InputArgs
 from dingo.exec import Executor
+
+# 获取项目根目录
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
 def image_relevant():
     input_data = {
-        "input_path": "../../test/data/test_img_jsonl.jsonl",
+        "input_path": str(PROJECT_ROOT / "test/data/test_img_jsonl.jsonl"),
         "output_path": "output/hallucination_evaluation/",
         "dataset": {
             "source": "local",

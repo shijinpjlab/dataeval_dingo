@@ -1,10 +1,15 @@
+from pathlib import Path
+
 from dingo.config import InputArgs
 from dingo.exec import Executor
+
+# 获取项目根目录
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
 def exec_first():
     input_data = {
-        "input_path": "../../test/data/test_local_jsonl.jsonl",
+        "input_path": str(PROJECT_ROOT / "test/data/test_local_jsonl.jsonl"),
         "dataset": {
             "source": "local",
             "format": "jsonl"
@@ -35,7 +40,7 @@ def exec_first():
 
 def exec_second():
     input_data = {
-        "input_path": "../../test/data/test_local_jsonl.jsonl",
+        "input_path": str(PROJECT_ROOT / "test/data/test_local_jsonl.jsonl"),
         "dataset": {
             "source": "local",
             "format": "jsonl",

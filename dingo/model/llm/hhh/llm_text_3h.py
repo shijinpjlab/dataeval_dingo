@@ -13,7 +13,7 @@ class LLMText3H(BaseOpenAI):
     def build_messages(cls, input_data):
         question = input_data.prompt
         response = input_data.content
-        prompt_content = cls.prompt.content % (question, response)
+        prompt_content = cls.prompt % (question, response)
 
         messages = [{"role": "user", "content": prompt_content}]
 
@@ -38,15 +38,21 @@ class LLMText3H(BaseOpenAI):
 
         result = EvalDetail(metric=cls.__name__)
 
+        # Get the quality dimension name from class name
+        # e.g., LLMText3HHelpful -> HELPFUL
+        class_prefix = "LLMText3H"
+        if cls.__name__.startswith(class_prefix):
+            quality_name = cls.__name__[len(class_prefix):].upper()
+        else:
+            quality_name = cls.__name__.upper()
+
         # eval_status
         if response_model.score == 1:
-            tmp_name = cls.prompt.__name__[8:].upper()
-            result.label = [f"{QualityLabel.QUALITY_GOOD}.{tmp_name}"]
+            result.label = [f"{QualityLabel.QUALITY_GOOD}.{quality_name}"]
             result.reason = [response_model.reason] if response_model.reason else ["Response meets quality criteria"]
         else:
             result.status = True
-            tmp_name = "NOT_" + cls.prompt.__name__[8:].upper()
-            result.label = [f"QUALITY_BAD.{tmp_name}"]
+            result.label = [f"QUALITY_BAD.NOT_{quality_name}"]
             result.reason = [response_model.reason] if response_model.reason else ["Response fails quality criteria"]
 
         return result

@@ -4,10 +4,14 @@ from pathlib import Path
 from dingo.config import InputArgs
 from dingo.exec import Executor
 
+# 获取项目根目录
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
 if __name__ == '__main__':
-    OPENAI_MODEL = 'deepseek-chat'
-    OPENAI_URL = 'https://api.deepseek.com/v1'
-    OPENAI_KEY = os.getenv("OPENAI_KEY")
+    # Configure LLM (set your API key via environment variable OPENAI_KEY)
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+    OPENAI_URL = os.getenv("OPENAI_URL", "https://api.openai.com/v1")
+    OPENAI_KEY = os.getenv("OPENAI_KEY", "YOUR_API_KEY")  # Set OPENAI_KEY env var
     common_config = {
         "model": OPENAI_MODEL,
         "key": OPENAI_KEY,
@@ -15,7 +19,7 @@ if __name__ == '__main__':
     }
 
     input_data = {
-        "input_path": str(Path("test/data/test_3h_jsonl.jsonl")),
+        "input_path": str(PROJECT_ROOT / "test/data/test_3h_jsonl.jsonl"),
         "dataset": {
             "source": "local",
             "format": "jsonl"

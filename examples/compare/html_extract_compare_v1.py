@@ -1,9 +1,14 @@
+from pathlib import Path
+
 from dingo.config import InputArgs
 from dingo.exec import Executor
 
+# 获取项目根目录
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
 if __name__ == '__main__':
     input_data = {
-        "input_path": "../../test/data/compare/old_new_compare_10000.jsonl",
+        "input_path": str(PROJECT_ROOT / "test/data/compare/old_new_compare_10000.jsonl"),
         "dataset": {
             "source": "local",
             "format": "jsonl",
