@@ -2,7 +2,7 @@ import os
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data
-from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
+from dingo.model.llm.text_quality.llm_text_quality_v5 import LLMTextQualityV5
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
 # Configure LLM (set your API key via environment variable OPENAI_KEY)
@@ -18,12 +18,12 @@ def llm():
         content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
     )
 
-    LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
+    LLMTextQualityV5.dynamic_config = EvaluatorLLMArgs(
         model=OPENAI_MODEL,
         key=OPENAI_KEY,
         api_url=OPENAI_URL,
     )
-    res = LLMTextQualityModelBase.eval(data)
+    res = LLMTextQualityV5.eval(data)
     print(res)
 
 
