@@ -223,7 +223,7 @@ class TestS3DataSource(unittest.TestCase):
 
                 # 创建 S3DataSource 实例以触发 boto3.client 调用
                 input_args = InputArgs(**config)
-                datasource = S3DataSource(input_args=input_args)
+                _ = S3DataSource(input_args=input_args)
 
                 # 验证 boto3.client 被调用了
                 self.assertTrue(mock_client.called)
