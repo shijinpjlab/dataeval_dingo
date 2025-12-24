@@ -286,3 +286,66 @@ class LocalDataSource(DataSource):
                         f'Unexpected error reading file "{f}": {str(e)}. '
                         f'Please check if the file exists and is readable.'
                     )
+
+
+def load_local_file(path: str, by_line: bool = True) -> Generator[str, None, None]:
+    """
+    Load a local file and return its contents.
+
+    This is a standalone helper function for loading local files without needing
+    to create a full LocalDataSource instance.
+
+    Args:
+        path: Path to the file or directory to load.
+        by_line: If True, yield content line by line. If False, yield entire content.
+
+    Returns:
+        Generator[str]: The contents of the file(s).
+
+    Raises:
+        RuntimeError: If the file doesn't exist, is not readable, or has unsupported format.
+    """
+    import gzip
+
+    if not os.path.exists(path):
+        raise RuntimeError(f'"{path}" is not a valid path')
+
+    f_list = []
+    if os.path.isfile(path):
+        f_list = [path]
+    elif os.path.isdir(path):
+        # Find all files recursively
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                f_list.append(os.path.join(root, file))
+
+    for f in f_list:
+        # Check if file is gzipped
+        if f.endswith('.gz'):
+            try:
+                with gzip.open(f, 'rt', encoding='utf-8') as _f:
+                    if by_line:
+                        for line in _f:
+                            yield line
+                    else:
+                        yield _f.read()
+            except Exception as gz_error:
+                raise RuntimeError(
+                    f'Failed to read gzipped file "{f}": {str(gz_error)}. '
+                    f'Please ensure the file is a valid gzip-compressed text file.'
+                )
+        else:
+            # For regular files, try UTF-8 encoding
+            try:
+                with open(f, "r", encoding="utf-8") as _f:
+                    if by_line:
+                        for line in _f:
+                            yield line
+                    else:
+                        yield _f.read()
+            except UnicodeDecodeError as decode_error:
+                raise RuntimeError(
+                    f'Failed to read file "{f}": Unsupported file format or encoding. '
+                    f'Dingo only supports UTF-8 text files (.jsonl, .json, .txt), Excel files (.xlsx, .xls) and .gz compressed text files. '
+                    f'Original error: {str(decode_error)}'
+                )

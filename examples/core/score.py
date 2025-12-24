@@ -5,10 +5,10 @@ from dingo.io.input import Data
 from dingo.model.llm.text_quality.llm_text_quality_v5 import LLMTextQualityV5
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
-# Configure LLM (set your API key via environment variable OPENAI_KEY)
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
-OPENAI_URL = os.getenv("OPENAI_URL", "https://api.openai.com/v1")
-OPENAI_KEY = os.getenv("OPENAI_KEY", "YOUR_API_KEY")  # Set OPENAI_KEY env var
+# Configure LLM (set your API key via environment variable OPENAI_API_KEY)
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "deepseek-chat")
+OPENAI_URL = os.getenv("OPENAI_BASE_URL", "https://api.deepseek.com/v1")
+OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")  # Set OPENAI_API_KEY env var
 
 
 def llm():

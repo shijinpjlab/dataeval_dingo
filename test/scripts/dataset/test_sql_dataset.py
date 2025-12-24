@@ -132,10 +132,20 @@ def test_sql_dataset():
         print("=" * 60)
 
     finally:
+        # 显式释放 SQLAlchemy 引擎连接
+        if 'datasource' in dir() and hasattr(datasource, 'engine'):
+            datasource.engine.dispose()
+
         # 清理测试数据库
+        import gc
+        gc.collect()  # 强制垃圾回收
+
         if os.path.exists(db_path):
-            os.remove(db_path)
-            print(f"\n✓ 清理测试数据库: {db_path}")
+            try:
+                os.remove(db_path)
+                print(f"\n✓ 清理测试数据库: {db_path}")
+            except PermissionError:
+                print(f"\n⚠ 无法删除测试数据库（Windows文件锁定）: {db_path}")
 
 
 def test_stream_results():
@@ -144,13 +154,19 @@ def test_stream_results():
     print("测试流式读取特性")
     print("=" * 60)
 
-    # 创建一个包含更多数据的测试数据库
-    db_path = os.path.join(tempfile.gettempdir(), "test_dingo_sql_stream.db")
+    # 创建一个包含更多数据的测试数据库（使用唯一文件名避免冲突）
+    import uuid
+    db_path = os.path.join(tempfile.gettempdir(), f"test_dingo_sql_stream_{uuid.uuid4().hex[:8]}.db")
+
+    # 确保文件不存在
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS large_table (
+        CREATE TABLE large_table (
             id INTEGER PRIMARY KEY,
             data TEXT
         )
@@ -205,9 +221,20 @@ def test_stream_results():
         print(f"\n✓ 流式读取验证通过（处理了 {count} 条数据后停止）")
 
     finally:
+        # 显式释放 SQLAlchemy 引擎连接
+        if 'datasource' in dir() and hasattr(datasource, 'engine'):
+            datasource.engine.dispose()
+
+        # 清理测试数据库
+        import gc
+        gc.collect()  # 强制垃圾回收
+
         if os.path.exists(db_path):
-            os.remove(db_path)
-            print(f"✓ 清理测试数据库: {db_path}")
+            try:
+                os.remove(db_path)
+                print(f"✓ 清理测试数据库: {db_path}")
+            except PermissionError:
+                print(f"⚠ 无法删除测试数据库（Windows文件锁定）: {db_path}")
 
 
 if __name__ == "__main__":

@@ -2,13 +2,22 @@
 Spark 执行器的单元测试
 测试 Spark 引擎的指标分数收集和统计功能
 """
+import pytest
 from unittest.mock import MagicMock
 
 from dingo.config import InputArgs
-from dingo.exec.spark import SparkExecutor
 from dingo.io.output.summary_model import SummaryModel
 
+# 尝试导入 pyspark，如果不可用则跳过测试
+try:
+    from dingo.exec.spark import SparkExecutor
+    PYSPARK_AVAILABLE = True
+except ImportError:
+    PYSPARK_AVAILABLE = False
+    SparkExecutor = None
 
+
+@pytest.mark.skipif(not PYSPARK_AVAILABLE, reason="pyspark is not installed")
 class TestSparkExecutor:
     """Spark 执行器测试类"""
 

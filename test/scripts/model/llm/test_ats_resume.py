@@ -105,16 +105,14 @@ class TestLLMResumeOptimizer:
     """Tests for LLMResumeOptimizer."""
 
     def test_build_messages_general_mode(self):
-        """Test general mode (no context) - skip if Data doesn't support context."""
-        # On main branch, Data doesn't have context field, so we test differently
+        """Test general mode (no context)."""
+        # Data class with extra="allow" supports any field including context
         data = Data(
             data_id='test_1',
             content='Python developer resume',
             prompt='Senior Python Developer'
         )
-        # Set context via attribute if possible (for branches that support it)
-        if not hasattr(data, 'context'):
-            pytest.skip("Data class doesn't support context field (main branch)")
+        # No context provided, so this is general mode
 
         messages = LLMResumeOptimizer.build_messages(data)
 

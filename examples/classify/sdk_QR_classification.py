@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from dingo.config import InputArgs
@@ -8,6 +9,11 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
 def classify_QR():
+    # 从环境变量获取 API 配置
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    api_url = os.environ.get("OPENAI_API_BASE", "https://api.deepseek.com")
+    model = os.environ.get("OPENAI_MODEL", "deepseek-chat")
+
     input_data = {
         "input_path": str(PROJECT_ROOT / "test/data/test_imgQR_jsonl.jsonl"),
         "dataset": {
@@ -24,7 +30,7 @@ def classify_QR():
             {
                 "fields": {"id": "id", "content": "content"},
                 "evals": [
-                    {"name": "LLMClassifyQR", "config": {"key": "", "api_url": ""}}
+                    {"name": "LLMClassifyQR", "config": {"model": model, "key": api_key, "api_url": api_url}}
                 ]
             }
         ]

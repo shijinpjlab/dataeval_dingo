@@ -56,7 +56,7 @@ def example_1_general_polish():
 
     result = LLMResumeOptimizer.eval(data)
 
-    print(f"Error Status: {result.error_status}")
+    print(f"Status: {result.status}")
     print(f"Reason:\n{result.reason[0]}")
 
     # Access full optimization result
@@ -107,7 +107,7 @@ def example_2_targeted_optimization():
 
     result = LLMResumeOptimizer.eval(data)
 
-    print(f"Error Status: {result.error_status}")
+    print(f"Status: {result.status}")
     print(f"Reason:\n{result.reason[0]}")
 
     if hasattr(result, 'optimized_content'):

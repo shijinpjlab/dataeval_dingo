@@ -63,29 +63,31 @@ class TestHfDataset:
             print(i)
             break
 
+    @pytest.mark.skip(reason="Large dataset download required, run manually with: pytest -k test_hf_dataset_get_data_4 --run-slow")
     def test_hf_dataset_get_data_4(self):
         path = "lmms-lab/LLaVA-OneVision-Data"
         ri = InputArgs(
             input_path=path,
             output_path='./test/outputs/',
-            dataset={"source": "hugging_face", "format": "hf-image"},
+            dataset={"source": "hugging_face", "format": "hf-image", "hf_config": {"huggingface_config_name": "CLEVR-Math(MathV360K)"}},
             evaluator=[{"fields": {"image": ["image"]}, "evals": [{"name": "RuleAspectRatio"}, {"name": "RuleImageSize"}]}]
         )
-        source = HuggingFaceSource(input_args=ri, config_name='CLEVR-Math(MathV360K)')
+        source = HuggingFaceSource(input_args=ri)
         dataset: HuggingFaceDataset = HuggingFaceDataset(source=source, name="LLaVA-OneVision-Data")
         data_iter = dataset.get_data()
         first_ele = next(data_iter)
         print(first_ele)
 
+    @pytest.mark.skip(reason="Large dataset download required, run manually with: pytest -k test_hf_dataset_get_data_5 --run-slow")
     def test_hf_dataset_get_data_5(self):
         path = "HuggingFaceM4/Docmatix"
         ri = InputArgs(
             input_path=path,
             output_path='./test/outputs/',
-            dataset={"source": "hugging_face", "format": "hf-image", "hf_config": {"huggingface_split": "test"}},
+            dataset={"source": "hugging_face", "format": "hf-image", "hf_config": {"huggingface_split": "test", "huggingface_config_name": "zero-shot-exp"}},
             evaluator=[{"fields": {"image": ["images"]}, "evals": [{"name": "RuleAspectRatio"}, {"name": "RuleImageSize"}]}]
         )
-        source = HuggingFaceSource(input_args=ri, config_name='zero-shot-exp')
+        source = HuggingFaceSource(input_args=ri)
         dataset: HuggingFaceDataset = HuggingFaceDataset(source=source, name="Docmatix")
         data_iter = dataset.get_data()
         first_ele = next(data_iter)

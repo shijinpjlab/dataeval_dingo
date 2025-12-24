@@ -57,15 +57,16 @@ class TestHfDataset:
         for i in data_iter:
             print(i)
 
+    @pytest.mark.skip(reason="Large dataset download required, run manually with: pytest -k test_hf_datasource_get_data_5 --run-slow")
     def test_hf_datasource_get_data_5(self):
         path = "lmms-lab/LLaVA-OneVision-Data"
         ri = InputArgs(
             input_path=path,
             output_path='./test/outputs/',
-            dataset={"source": "hugging_face", "format": "hf-image"},
+            dataset={"source": "hugging_face", "format": "hf-image", "hf_config": {"huggingface_config_name": "CLEVR-Math(MathV360K)"}},
             evaluator=[{"fields": {"image": ["image"], "content": "conversations"}, "evals": [{"name": "RuleAspectRatio"}, {"name": "RuleImageSize"}]}]
         )
-        source = HuggingFaceSource(input_args=ri, config_name='CLEVR-Math(MathV360K)')
+        source = HuggingFaceSource(input_args=ri)
         data_iter = source.load()
         print(data_iter[0])
 
