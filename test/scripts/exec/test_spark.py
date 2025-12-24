@@ -2,8 +2,9 @@
 Spark 执行器的单元测试
 测试 Spark 引擎的指标分数收集和统计功能
 """
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from dingo.config import InputArgs
 from dingo.io.output.summary_model import SummaryModel
