@@ -4,21 +4,11 @@ Spark 执行器的单元测试
 """
 from unittest.mock import MagicMock
 
-import pytest
-
 from dingo.config import InputArgs
+from dingo.exec.spark import SparkExecutor
 from dingo.io.output.summary_model import SummaryModel
 
-# 尝试导入 pyspark，如果不可用则跳过测试
-try:
-    from dingo.exec.spark import SparkExecutor
-    PYSPARK_AVAILABLE = True
-except ImportError:
-    PYSPARK_AVAILABLE = False
-    SparkExecutor = None
 
-
-@pytest.mark.skipif(not PYSPARK_AVAILABLE, reason="pyspark is not installed")
 class TestSparkExecutor:
     """Spark 执行器测试类"""
 
