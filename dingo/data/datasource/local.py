@@ -142,6 +142,75 @@ class LocalDataSource(DataSource):
             if wb:
                 wb.close()
 
+    def _load_parquet_file(self, path: str) -> Generator[str, None, None]:
+        """
+        Load a Parquet file and return its contents row by row as JSON strings.
+        Supports streaming for large files to avoid memory overflow.
+
+        Args:
+            path (str): The path to the Parquet file.
+
+        Returns:
+            Generator[str]: Each row as a JSON string with column keys.
+        """
+        try:
+            import pyarrow.parquet as pq
+        except ImportError:
+            raise RuntimeError(
+                "pyarrow is required to read Parquet files. "
+                "Please install it using: pip install pyarrow"
+            )
+
+        # 获取 Parquet 配置
+        batch_size = self.input_args.dataset.parquet_config.batch_size
+        columns = self.input_args.dataset.parquet_config.columns
+
+        try:
+            # 打开 Parquet 文件
+            parquet_file = pq.ParquetFile(path)
+
+            # 使用流式读取，分批次处理
+            for batch in parquet_file.iter_batches(batch_size=batch_size, columns=columns):
+                # 将 batch 转换为字典格式
+                batch_dict = batch.to_pydict()
+
+                # 获取批次中的行数
+                num_rows = len(next(iter(batch_dict.values()))) if batch_dict else 0
+
+                # 逐行处理
+                for i in range(num_rows):
+                    # 构建每一行的字典
+                    row_dict = {col: batch_dict[col][i] for col in batch_dict}
+
+                    # 处理特殊类型的值
+                    for key, value in row_dict.items():
+                        # 处理 None 值
+                        if value is None:
+                            row_dict[key] = ""
+                        # 处理 bytes 类型
+                        elif isinstance(value, bytes):
+                            try:
+                                row_dict[key] = value.decode('utf-8')
+                            except UnicodeDecodeError:
+                                row_dict[key] = str(value)
+                        # 处理其他不可 JSON 序列化的类型
+                        elif not isinstance(value, (str, int, float, bool, list, dict)):
+                            row_dict[key] = str(value)
+
+                    # 转换为 JSON 字符串并 yield
+                    yield json.dumps(row_dict, ensure_ascii=False) + '\n'
+
+        except ImportError as ie:
+            raise RuntimeError(
+                f'Failed to load required library for Parquet: {str(ie)}. '
+                f'Please install pyarrow using: pip install pyarrow'
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f'Failed to read Parquet file "{path}": {str(e)}. '
+                f'Please ensure the file is a valid Parquet file.'
+            )
+
     def _load_csv_file(self, path: str) -> Generator[str, None, None]:
         """
         Load a CSV file and return its contents row by row as JSON strings.
@@ -334,6 +403,11 @@ class LocalDataSource(DataSource):
                 if self.input_args.dataset.format != 'csv':
                     raise RuntimeError(f'CSV file "{f}" is not supported. Please set dataset.format to "csv" to read CSV files.')
                 yield from self._load_csv_file(f)
+            # Check if file is Parquet
+            elif f.endswith('.parquet'):
+                if self.input_args.dataset.format != 'parquet':
+                    raise RuntimeError(f'Parquet file "{f}" is not supported. Please set dataset.format to "parquet" to read Parquet files.')
+                yield from self._load_parquet_file(f)
             # Check if file is Excel
             elif f.endswith('.xlsx'):
                 if self.input_args.dataset.format != 'excel':
