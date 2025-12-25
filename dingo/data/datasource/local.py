@@ -175,7 +175,7 @@ class LocalDataSource(DataSource):
                 batch_dict = batch.to_pydict()
 
                 # 获取批次中的行数
-                num_rows = len(batch_dict[next(iter(batch_dict))])
+                num_rows = len(next(iter(batch_dict.values()))) if batch_dict else 0
 
                 # 逐行处理
                 for i in range(num_rows):
