@@ -44,8 +44,8 @@ def create_test_parquet_file(file_path: str, num_rows: int = 100):
 def create_test_parquet_with_special_types(file_path: str):
     """创建包含特殊类型的测试 Parquet 文件"""
     try:
-        import pandas as pd
         import numpy as np
+        import pandas as pd
     except ImportError:
         print("⚠ pandas 或 numpy 未安装")
         return False
@@ -506,4 +506,3 @@ if __name__ == "__main__":
     print("║" + " " * 18 + "所有测试完成!" + " " * 23 + "║")
     print("╚" + "═" * 58 + "╝")
     print("\n")
-

@@ -38,4 +38,3 @@ if __name__ == '__main__':
     executor = Executor.exec_map["local"](input_args)
     result = executor.execute()
     print(result)
-
