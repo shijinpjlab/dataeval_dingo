@@ -3,6 +3,8 @@ import copy
 import itertools
 import json
 import os
+import subprocess
+import sys
 import time
 import uuid
 from typing import Generator, List, Optional
@@ -151,6 +153,29 @@ class LocalExecutor(ExecProto):
         # Finalize summary
         self.summary = self.summarize(self.summary)
         self.write_summary(self.summary.output_path, self.input_args, self.summary)
+
+        # Open browser if use_browser is True
+        if self.input_args.use_browser:
+            try:
+                # 使用 sys.executable 获取当前 Python 解释器路径
+                cmd = f"{sys.executable} -m dingo.run.vsl --input {self.summary.output_path}"
+                log.info(f"Opening browser with command: {cmd}")
+                
+                # 使用 subprocess.Popen 在后台启动服务器
+                # start_new_session=True 让子进程独立运行，不受父进程退出影响
+                subprocess.Popen(
+                    cmd,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    start_new_session=True
+                )
+                
+                # 给服务器一点时间启动
+                time.sleep(1)
+                log.info("Browser server started in background")
+            except Exception as e:
+                log.warning(f"Failed to open browser: {e}")
 
         return self.summary
 
