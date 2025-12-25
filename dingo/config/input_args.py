@@ -40,6 +40,11 @@ class DatasetCsvArgs(BaseModel):
     quotechar: str = '"'  # 引号字符，默认双引号
 
 
+class DatasetParquetArgs(BaseModel):
+    batch_size: int = 10000  # 每次读取的行数，用于流式读取大文件
+    columns: Optional[List[str]] = None  # 指定读取的列，None 表示读取所有列
+
+
 class DatasetFieldArgs(BaseModel):
     id: str = ''
     prompt: str = ''
@@ -58,6 +63,7 @@ class DatasetArgs(BaseModel):
     sql_config: DatasetSqlArgs = DatasetSqlArgs()
     excel_config: DatasetExcelArgs = DatasetExcelArgs()
     csv_config: DatasetCsvArgs = DatasetCsvArgs()
+    parquet_config: DatasetParquetArgs = DatasetParquetArgs()
 
 
 class ExecutorResultSaveArgs(BaseModel):
