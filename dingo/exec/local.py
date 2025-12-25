@@ -161,7 +161,7 @@ class LocalExecutor(ExecProto):
                 # 将命令作为列表传递，避免 shell 注入风险
                 cmd = [sys.executable, "-m", "dingo.run.vsl", "--input", self.summary.output_path]
                 log.warning(f"Opening browser with command: {' '.join(cmd)}")
-                
+
                 # 使用 subprocess.Popen 在后台启动服务器
                 # start_new_session=True 让子进程独立运行，不受父进程退出影响
                 # stdout/stderr=DEVNULL 避免管道缓冲区死锁问题
@@ -171,7 +171,7 @@ class LocalExecutor(ExecProto):
                     stderr=subprocess.DEVNULL,
                     start_new_session=True
                 )
-                
+
                 # 给服务器一点时间启动
                 time.sleep(1)
                 log.warning("Browser server started in background")
