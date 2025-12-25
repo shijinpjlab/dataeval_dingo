@@ -158,22 +158,23 @@ class LocalExecutor(ExecProto):
         if self.input_args.use_browser:
             try:
                 # 使用 sys.executable 获取当前 Python 解释器路径
-                cmd = f"{sys.executable} -m dingo.run.vsl --input {self.summary.output_path}"
-                log.info(f"Opening browser with command: {cmd}")
+                # 将命令作为列表传递，避免 shell 注入风险
+                cmd = [sys.executable, "-m", "dingo.run.vsl", "--input", self.summary.output_path]
+                log.warning(f"Opening browser with command: {' '.join(cmd)}")
                 
                 # 使用 subprocess.Popen 在后台启动服务器
                 # start_new_session=True 让子进程独立运行，不受父进程退出影响
+                # stdout/stderr=DEVNULL 避免管道缓冲区死锁问题
                 subprocess.Popen(
                     cmd,
-                    shell=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                     start_new_session=True
                 )
                 
                 # 给服务器一点时间启动
                 time.sleep(1)
-                log.info("Browser server started in background")
+                log.warning("Browser server started in background")
             except Exception as e:
                 log.warning(f"Failed to open browser: {e}")
 
