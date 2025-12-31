@@ -13,7 +13,7 @@ Supports dual execution paths:
 from abc import abstractmethod
 from typing import Any, Dict, List
 
-from dingo.io import Data
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.llm.agent.tools import ToolRegistry
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -47,6 +47,8 @@ class BaseAgent(BaseOpenAI):
     available_tools: List[str] = []
     max_iterations: int = 5
     use_agent_executor: bool = False  # Opt-in to LangChain agent path
+
+    _required_fields = [RequiredField.CONTENT]
 
     @classmethod
     @abstractmethod

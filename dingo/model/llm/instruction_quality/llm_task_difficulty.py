@@ -13,6 +13,7 @@ Based on recent research:
 4. Constraint Density: 约束条件密度
 """
 
+from dingo.io.input import RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -42,6 +43,7 @@ class LLMTaskDifficulty(BaseOpenAI):
         "examples": "examples/sft/evaluate_instruction_quality.py"
     }
 
+    _required_fields = [RequiredField.CONTENT]
     prompt = """
 # Role
 You are an expert in assessing task complexity and difficulty for LLM training data evaluation.

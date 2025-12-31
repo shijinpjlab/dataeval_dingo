@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
+from dingo.io.input import RequiredField
 from dingo.model.llm.agent.tools.base_tool import BaseTool, ToolConfig
 from dingo.model.llm.agent.tools.tool_registry import tool_register
 from dingo.utils import log
@@ -75,6 +76,8 @@ class TavilySearch(BaseTool):
     name = "tavily_search"
     description = "Search the web for factual information using Tavily AI"
     config: TavilyConfig = TavilyConfig()
+
+    _required_fields = [RequiredField.IMAGE]
 
     @classmethod
     def execute(cls, query: str, **kwargs) -> Dict[str, Any]:

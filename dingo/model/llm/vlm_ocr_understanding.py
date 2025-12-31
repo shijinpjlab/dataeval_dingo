@@ -1,4 +1,4 @@
-from dingo.io import Data
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -28,6 +28,7 @@ class VLMOCRUnderstanding(BaseOpenAI):
         "evaluation_results": "通过对比VLM输出与OCR ground truth，识别文字遗漏、错误、幻觉等问题"
     }
 
+    _required_fields = [RequiredField.CONTENT]
     prompt = """你是一名专业的多模态模型评估专家,擅长评估视觉语言模型(VLM)对图片中文字内容的识别和理解能力。
 
     ## 评估任务

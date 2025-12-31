@@ -7,7 +7,7 @@ RAG Context Relevancy (上下文相关性) LLM评估器
 import json
 from typing import List
 
-from dingo.io import Data
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -44,6 +44,8 @@ class LLMRAGContextRelevancy(BaseOpenAI):
         "examples": "examples/rag/dataset_rag_eval_baseline.py",
         "source_frameworks": "Ragas + DeepEval + TruLens"
     }
+
+    _required_fields = [RequiredField.CONTEXT, RequiredField.PROMPT]
 
     @staticmethod
     def context_relevance_judge1_prompt(query: str, context: str) -> str:

@@ -16,7 +16,7 @@ Key Features:
 import json
 from typing import Any, Dict, List
 
-from dingo.io import Data
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model import Model
 from dingo.model.llm.agent.base_agent import BaseAgent
@@ -95,6 +95,8 @@ Text: {content}
 Return format:
 {{"claims": ["claim 1", "claim 2", ...]}}
 """
+
+    _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT]
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:

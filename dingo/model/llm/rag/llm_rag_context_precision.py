@@ -7,7 +7,7 @@ import json
 import time
 from typing import List
 
-from dingo.io import Data
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -42,6 +42,8 @@ class LLMRAGContextPrecision(BaseOpenAI):
         "examples": "examples/rag/dataset_rag_eval_baseline.py",
         "source_frameworks": "Ragas"
     }
+
+    _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT, RequiredField.PROMPT]
 
     @classmethod
     def context_precision_prompt(cls, question: str, context: str, answer: str) -> str:

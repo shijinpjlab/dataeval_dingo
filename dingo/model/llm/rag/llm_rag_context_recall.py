@@ -7,7 +7,7 @@ RAG Context Recall (上下文召回) LLM评估器
 import json
 from typing import List
 
-from dingo.io import Data
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -47,6 +47,7 @@ class LLMRAGContextRecall(BaseOpenAI):
         "source_frameworks": "Ragas + DeepEval"
     }
 
+    _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT, RequiredField.PROMPT]
     prompt = """上下文召回评估提示词，用于分类陈述归因"""
 
     @staticmethod
