@@ -51,10 +51,8 @@ def dingo_demo(
         fields = {}
         if fields_data is not None and len(fields_data) > 0:
             for row in fields_data.values.tolist():
-                if len(row) >= 2 and row[0]:  # Required Field is not empty
-                    # If Dataset Column is empty or None, use Required Field as default
-                    dataset_column = row[1] if row[1] and str(row[1]).strip() else row[0]
-                    fields[row[0]] = dataset_column
+                if len(row) >= 2 and row[0] and row[1]:  # Both key and value are not empty
+                    fields[row[0]] = row[1]
 
         # Parse rule configs from dataframe
         rule_configs = {}
@@ -275,10 +273,10 @@ def suggest_fields_dataframe(rule_list, llm_list):
                     if isinstance(field, RequiredField):
                         suggested_fields.add(field.value)
 
-    # Generate suggested fields rows - Required Field with value, Dataset Column empty
+    # Generate suggested fields rows - Required Field and Dataset Column both with same value
     rows = []
     for field in sorted(suggested_fields):
-        rows.append([field, ""])
+        rows.append([field, field])
 
     return gr.update(value=rows)
 
