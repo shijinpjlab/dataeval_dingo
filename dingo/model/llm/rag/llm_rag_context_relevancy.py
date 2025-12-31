@@ -46,6 +46,7 @@ class LLMRAGContextRelevancy(BaseOpenAI):
     }
 
     _required_fields = [RequiredField.CONTEXT, RequiredField.PROMPT]
+
     @staticmethod
     def context_relevance_judge1_prompt(query: str, context: str) -> str:
         """

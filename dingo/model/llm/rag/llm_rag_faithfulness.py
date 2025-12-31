@@ -44,6 +44,7 @@ class LLMRAGFaithfulness(BaseOpenAI):
     }
 
     _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT, RequiredField.PROMPT]
+
     @staticmethod
     def statement_generator_prompt(question: str, answer: str) -> str:
         """

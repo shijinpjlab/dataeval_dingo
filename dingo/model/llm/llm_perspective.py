@@ -15,6 +15,7 @@ class LLMPerspective(BaseLLM):
     )
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def create_client(cls):
         try:

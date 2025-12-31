@@ -13,8 +13,8 @@ Based on recent research:
 4. Constraint Density: 约束条件密度
 """
 
-from dingo.io.output.eval_detail import EvalDetail
 from dingo.io.input import RequiredField
+from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils import log

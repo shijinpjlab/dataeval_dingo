@@ -44,6 +44,7 @@ class LLMRAGContextPrecision(BaseOpenAI):
     }
 
     _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT, RequiredField.PROMPT]
+
     @classmethod
     def context_precision_prompt(cls, question: str, context: str, answer: str) -> str:
         """上下文精度评估Prompt (Chinese version)

@@ -1,8 +1,8 @@
+from dingo.io.input import RequiredField
 from dingo.model import Model
 from dingo.model.llm.text_quality.base_text_quality import BaseTextQuality
 
 
-from dingo.io.input import RequiredField
 @Model.llm_register("LLMTextQualityV4")
 class LLMTextQualityV4(BaseTextQuality):
     # Metadata for documentation generation

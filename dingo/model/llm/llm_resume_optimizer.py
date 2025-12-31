@@ -19,7 +19,7 @@ try:
     from dingo.io.output.eval_detail import EvalDetail, QualityLabel
     USE_EVAL_DETAIL = True
 except ImportError:
-    # from dingo.model.modelres import ModelRes
+    from dingo.model.modelres import ModelRes
     USE_EVAL_DETAIL = False
 
 
@@ -48,6 +48,7 @@ class LLMResumeOptimizer(BaseOpenAI):
     }
 
     _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT, RequiredField.PROMPT]
+
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
         """

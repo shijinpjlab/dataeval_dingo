@@ -13,8 +13,8 @@ Based on recent research:
 4. Completeness: 指令是否完整，包含所有必要信息
 """
 
-from dingo.io.output.eval_detail import EvalDetail
 from dingo.io.input import RequiredField
+from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils import log

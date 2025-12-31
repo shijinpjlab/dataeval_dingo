@@ -19,7 +19,7 @@ try:
     from dingo.io.output.eval_detail import EvalDetail, QualityLabel
     USE_EVAL_DETAIL = True
 except ImportError:
-    # from dingo.model.modelres import ModelRes
+    from dingo.model.modelres import ModelRes
     USE_EVAL_DETAIL = False
 
 # Complete synonym mapping for keyword normalization

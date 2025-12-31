@@ -1376,6 +1376,7 @@ class RuleLineEndWithEllipsis(BaseRule):
     dynamic_config = EvaluatorRuleArgs(threshold=0.3, key_list=["...", "…"])
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
@@ -1422,6 +1423,7 @@ class RuleLineEndWithTerminal(BaseRule):
     )
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
@@ -1485,6 +1487,7 @@ class RuleLineStartWithBulletpoint(BaseRule):
     )
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
@@ -1529,6 +1532,7 @@ class RuleLineJavascriptCount(BaseRule):
     dynamic_config = EvaluatorRuleArgs(threshold=3)
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from dingo.model.rule.utils.util import TextSlice, normalize, split_paragraphs
@@ -1570,6 +1574,7 @@ class RuleLoremIpsum(BaseRule):
     dynamic_config = EvaluatorRuleArgs(threshold=3e-08)
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from dingo.model.rule.utils.util import normalize
@@ -1607,6 +1612,7 @@ class RuleMeanWordLength(BaseRule):
     dynamic_config = EvaluatorRuleArgs(key_list=["3", "10"])
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from dingo.model.rule.utils.util import normalize
@@ -1750,6 +1756,7 @@ class RulePatternSearch(BaseRule):
     dynamic_config = EvaluatorRuleArgs(pattern="your pattern")
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
@@ -1780,6 +1787,7 @@ class RuleSentenceNumber(BaseRule):
     dynamic_config = EvaluatorRuleArgs(key_list=["3", "7500"])
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
@@ -1872,6 +1880,7 @@ class RuleSpaceMore(BaseRule):
     dynamic_config = EvaluatorRuleArgs(pattern=" {500,}")
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
@@ -1932,6 +1941,7 @@ class RuleSpecialCharacter(BaseRule):
     )
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
@@ -1979,6 +1989,7 @@ class RuleStopWord(BaseRule):
     dynamic_config = EvaluatorRuleArgs(threshold=0.06)
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from nltk.tokenize import WordPunctTokenizer
@@ -2020,6 +2031,7 @@ class RuleSymbolWordRatio(BaseRule):
     dynamic_config = EvaluatorRuleArgs(threshold=0.4, key_list=["#", "...", "…"])
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from nltk.tokenize import WordPunctTokenizer
@@ -2060,6 +2072,7 @@ class RuleUniqueWords(BaseRule):
     dynamic_config = EvaluatorRuleArgs(threshold=0.1)
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from dingo.model.rule.utils.util import normalize
@@ -2098,6 +2111,7 @@ class RuleUnsafeWords(BaseRule):
     dynamic_config = EvaluatorRuleArgs(refer_path=[])
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
 
@@ -2172,6 +2186,7 @@ class RuleVedioDataFormat(BaseRule):
     dynamic_config = EvaluatorRuleArgs()
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
@@ -2221,6 +2236,7 @@ class RuleOnlyUrl(BaseRule):
     )
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
@@ -2255,6 +2271,7 @@ class RuleWatermark(BaseRule):
     dynamic_config = EvaluatorRuleArgs(key_list=[])
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
@@ -2285,6 +2302,7 @@ class RuleWordNumber(BaseRule):
     dynamic_config = EvaluatorRuleArgs(key_list=["20", "100000"])
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         from dingo.model.rule.utils.util import normalize
@@ -2320,6 +2338,7 @@ class RuleWordSplit(BaseRule):
     dynamic_config = EvaluatorRuleArgs(pattern=r"[A-Za-z]+-\s*$")
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
@@ -2373,6 +2392,7 @@ class RuleWordStuck(BaseRule):
     )
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         import wordninja
@@ -2479,6 +2499,7 @@ class RulePIIDetection(BaseRule):
     }
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     def _validate_luhn(cls, number: str) -> bool:
         """Luhn 算法验证信用卡号"""

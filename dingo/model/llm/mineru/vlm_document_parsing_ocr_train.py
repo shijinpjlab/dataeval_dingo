@@ -87,6 +87,7 @@ class VLMDocumentParsingOCRTrain(BaseOpenAI):
         """
 
     _required_fields = [RequiredField.CONTENT, RequiredField.IMAGE]
+
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
         if isinstance(input_data.image[0], str):

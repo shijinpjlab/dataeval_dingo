@@ -49,6 +49,7 @@ class BaseAgent(BaseOpenAI):
     use_agent_executor: bool = False  # Opt-in to LangChain agent path
 
     _required_fields = [RequiredField.CONTENT]
+
     @classmethod
     @abstractmethod
     def plan_execution(cls, input_data: Data) -> List[Dict[str, Any]]:

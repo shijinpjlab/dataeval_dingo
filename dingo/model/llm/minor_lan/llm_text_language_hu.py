@@ -1,8 +1,8 @@
+from dingo.io.input import RequiredField
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 
 
-from dingo.io.input import RequiredField
 @Model.llm_register("LLMTextLanguageHu")
 class LLMTextLanguageHu(BaseOpenAI):
     _required_fields = [RequiredField.CONTENT]

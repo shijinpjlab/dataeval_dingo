@@ -97,6 +97,7 @@ Return format:
 """
 
     _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT]
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         """

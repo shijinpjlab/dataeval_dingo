@@ -6,4 +6,3 @@ class RequiredField(Enum):
     PROMPT = "prompt"
     CONTEXT = "context"
     IMAGE = "image"
-    

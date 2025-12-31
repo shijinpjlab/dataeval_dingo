@@ -248,7 +248,7 @@ def generate_llm_config_dataframe(llm_list):
 def suggest_fields_dataframe(rule_list, llm_list):
     """Suggest required field mappings based on selected evaluators"""
     from dingo.io.input import RequiredField
-    
+
     suggested_fields = set()
 
     # Get rule and llm name maps
