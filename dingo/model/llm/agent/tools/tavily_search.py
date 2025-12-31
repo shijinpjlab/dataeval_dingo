@@ -26,6 +26,7 @@ from dingo.model.llm.agent.tools.tool_registry import tool_register
 from dingo.utils import log
 
 
+from dingo.io.input import RequiredField
 class TavilyConfig(ToolConfig):
     """Configuration for Tavily search tool"""
     api_key: Optional[str] = None
@@ -76,6 +77,7 @@ class TavilySearch(BaseTool):
     description = "Search the web for factual information using Tavily AI"
     config: TavilyConfig = TavilyConfig()
 
+    _required_fields = [RequiredField.IMAGE]
     @classmethod
     def execute(cls, query: str, **kwargs) -> Dict[str, Any]:
         """

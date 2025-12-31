@@ -3,7 +3,7 @@ import json
 import re
 from typing import List
 
-from dingo.io import Data
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -86,6 +86,7 @@ class VLMDocumentParsingOCRTrain(BaseOpenAI):
         ```
         """
 
+    _required_fields = [RequiredField.CONTENT, RequiredField.IMAGE]
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
         if isinstance(input_data.image[0], str):

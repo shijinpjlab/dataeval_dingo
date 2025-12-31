@@ -11,7 +11,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 
 from dingo.config.input_args import EvaluatorRuleArgs
-from dingo.io import Data, RequiredField
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule

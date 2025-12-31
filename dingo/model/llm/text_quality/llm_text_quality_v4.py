@@ -2,6 +2,7 @@ from dingo.model import Model
 from dingo.model.llm.text_quality.base_text_quality import BaseTextQuality
 
 
+from dingo.io.input import RequiredField
 @Model.llm_register("LLMTextQualityV4")
 class LLMTextQualityV4(BaseTextQuality):
     # Metadata for documentation generation
@@ -14,6 +15,7 @@ class LLMTextQualityV4(BaseTextQuality):
         "paper_authors": "Yu et al., 2025",
         "evaluation_results": "docs/eval/prompt/redpajama_data_evaluated_by_prompt.md"
     }
+    _required_fields = [RequiredField.CONTENT]
     prompt = """
     # Role
     You are an expert in language model evaluation.

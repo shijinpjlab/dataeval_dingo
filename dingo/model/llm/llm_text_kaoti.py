@@ -2,8 +2,10 @@ from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 
 
+from dingo.io.input import RequiredField
 @Model.llm_register("LLMTextKaoti")
 class LLMTextKaoti(BaseOpenAI):
+    _required_fields = [RequiredField.CONTENT]
     prompt = """
     # Role
     You are an expert in language models and data quality assessment.

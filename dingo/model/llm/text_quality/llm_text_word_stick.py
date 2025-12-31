@@ -1,6 +1,7 @@
 import json
 
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
+from dingo.io.input import RequiredField
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.response.response_class import ResponseScoreTypeNameReason
@@ -10,6 +11,7 @@ from dingo.utils.exception import ConvertJsonError
 
 @Model.llm_register("LLMTextWordStick")
 class LLMTextWordStick(BaseOpenAI):
+    _required_fields = [RequiredField.CONTENT]
     prompt = """
     ### Role
     You are a data quality assessment expert, you can communicate fluently in English, and think from the perspective of Chinese people.

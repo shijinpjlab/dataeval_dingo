@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
 
+from dingo.io.input import RequiredField
 class ToolConfig(BaseModel):
     """Base configuration for tools"""
     api_key: Optional[str] = None
@@ -39,6 +40,7 @@ class BaseTool(ABC):
     description: str = None
     config: ToolConfig = ToolConfig()
 
+    _required_fields = [RequiredField.CONTENT]
     @classmethod
     @abstractmethod
     def execute(cls, **kwargs) -> Dict[str, Any]:

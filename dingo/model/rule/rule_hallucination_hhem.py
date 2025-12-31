@@ -15,7 +15,7 @@ import json
 from typing import List
 
 from dingo.config.input_args import EvaluatorRuleArgs
-from dingo.io import Data, RequiredField
+from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule

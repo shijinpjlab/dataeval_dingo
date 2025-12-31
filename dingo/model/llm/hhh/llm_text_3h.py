@@ -1,6 +1,7 @@
 import json
 
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
+from dingo.io.input import RequiredField
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.response.response_class import ResponseScoreReason
 from dingo.utils import log
@@ -9,6 +10,7 @@ from dingo.utils.exception import ConvertJsonError
 
 # @Model.llm_register("LLMText3H")
 class LLMText3H(BaseOpenAI):
+    _required_fields = [RequiredField.CONTENT, RequiredField.PROMPT]
     @classmethod
     def build_messages(cls, input_data):
         question = input_data.prompt

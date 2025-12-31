@@ -1,6 +1,7 @@
 import json
 
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
+from dingo.io.input import RequiredField
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.response.response_class import ResponseScoreTypeNameReason
@@ -10,6 +11,7 @@ from dingo.utils.exception import ConvertJsonError
 
 @Model.llm_register("LLMTextRepeat")
 class LLMTextRepeat(BaseOpenAI):
+    _required_fields = [RequiredField.CONTENT]
     prompt = """
     请判断一下文本是否存在重复问题。
     返回一个json，如{"score": 0, "reason": "xxx"}.

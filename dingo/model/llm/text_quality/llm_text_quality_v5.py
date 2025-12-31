@@ -2,6 +2,7 @@ from dingo.model import Model
 from dingo.model.llm.text_quality.base_text_quality import BaseTextQuality
 
 
+from dingo.io.input import RequiredField
 @Model.llm_register("LLMTextQualityV5")
 class LLMTextQualityV5(BaseTextQuality):
     # Metadata for documentation generation
@@ -15,6 +16,7 @@ class LLMTextQualityV5(BaseTextQuality):
         "examples": "examples/llm_and_rule/llm_local.py",
         "evaluation_results": "docs/eval/prompt/redpajama_data_evaluated_by_prompt.md"
     }
+    _required_fields = [RequiredField.CONTENT]
     prompt = """
 # Role
 You are an expert in assessing pretraining data quality for large language models.

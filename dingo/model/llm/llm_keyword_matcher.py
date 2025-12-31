@@ -8,7 +8,7 @@ import json
 import re
 from typing import List
 
-from dingo.io import Data
+from dingo.io.input import Data, RequiredField
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils import log
@@ -19,7 +19,7 @@ try:
     from dingo.io.output.eval_detail import EvalDetail, QualityLabel
     USE_EVAL_DETAIL = True
 except ImportError:
-    from dingo.model.modelres import ModelRes
+    # from dingo.model.modelres import ModelRes
     USE_EVAL_DETAIL = False
 
 # Complete synonym mapping for keyword normalization
@@ -97,6 +97,7 @@ class LLMKeywordMatcher(BaseOpenAI):
         "source_frameworks": "Dingo ATS Tools"
     }
 
+    _required_fields = [RequiredField.CONTENT, RequiredField.PROMPT]
     threshold = 0.6  # Default threshold for good match (60%)
 
     @classmethod
