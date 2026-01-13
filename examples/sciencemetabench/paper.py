@@ -33,4 +33,4 @@ if __name__ == '__main__':
     result = executor.execute()
     print(result)
 
-    write_similarity_to_excel("paper", "outputs/20260113_102321_d4c76b9e")
+    write_similarity_to_excel("paper", result.output_path)
