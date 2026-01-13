@@ -1,5 +1,10 @@
 import json
+import os
+from datetime import datetime
 from difflib import SequenceMatcher
+from pathlib import Path
+
+import pandas as pd
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io.input import Data, RequiredField
@@ -179,4 +184,122 @@ class RuleMetadataMatchTextbook(RuleMetadataMatchBase):
         key_list=['isbn', 'title', 'author', 'abstract', 'category', 'pub_time', 'publisher'],
         threshold=0.6
     )
+
+
+def write_similarity_to_excel(type: str, output_dir: str,  output_filename: str = None):
+    """
+    将相似度分析数据写入Excel文件
+    
+    Args:
+        output_dir: 输出目录路径，如 outputs/20260113_102321_d4c76b9e
+        type: 数据类型，可选值: 'paper'(学术论文), 'ebook'(电子书), 'textbook'(教科书)
+        output_filename: 输出Excel文件名，默认为带时间戳的 similarity_{type}_{时间戳}.xlsx
+    
+    Returns:
+        pd.DataFrame: 生成的数据框
+    
+    Raises:
+        ValueError: 当输出目录不存在、未找到jsonl文件或type不合法时抛出
+    """
+    # 定义不同类型的字段列表
+    KEY_LISTS = {
+        'paper': ['doi', 'title', 'author', 'keyword', 'abstract', 'pub_time'],
+        'ebook': ['isbn', 'title', 'author', 'abstract', 'category', 'pub_time', 'publisher'],
+        'textbook': ['isbn', 'title', 'author', 'abstract', 'category', 'pub_time', 'publisher'],
+    }
+    
+    # 验证type
+    if type not in KEY_LISTS:
+        raise ValueError(f"不支持的数据类型: {type}，可选值为: {list(KEY_LISTS.keys())}")
+    
+    key_list = KEY_LISTS[type]
+    
+    # 生成默认文件名
+    if output_filename is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"similarity_{type}_{timestamp}.xlsx"
+    
+    # 读取output_dir下所有的.jsonl文件
+    output_path = Path(output_dir)
+    if not output_path.exists():
+        raise ValueError(f"输出目录不存在: {output_dir}")
+    
+    # 收集所有jsonl文件
+    jsonl_files = list(output_path.glob("*.jsonl"))
+    if not jsonl_files:
+        raise ValueError(f"在目录 {output_dir} 中未找到任何.jsonl文件")
+    
+    # 读取所有数据
+    all_data = []
+    for jsonl_file in jsonl_files:
+        with open(jsonl_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    data = json.loads(line)
+                    all_data.append(data)
+    
+    if not all_data:
+        raise ValueError("未读取到任何数据")
+    
+    # 准备Excel数据
+    rows = []
+    for data in all_data:
+        sha256 = str(data.get('sha256', ''))
+        benchmark = data.get('benchmark', {})
+        product = data.get('product', {})
+        
+        # 从dingo_result中提取相似度数据
+        dingo_result = data.get('dingo_result', {})
+        eval_details = dingo_result.get('eval_details', {})
+        default_details = eval_details.get('default', [])
+        
+        # 获取相似度字典
+        similarity_dict = {}
+        if default_details and len(default_details) > 0:
+            reason_list = default_details[0].get('reason', [])
+            if reason_list and len(reason_list) > 0:
+                similarity_dict = reason_list[0].get('similarity', {})
+        
+        # 构建行数据，所有值转换为字符串
+        row = {'sha256': sha256}
+        
+        for field in key_list:
+            # benchmark字段值 - 转为字符串
+            benchmark_value = benchmark.get(field, '')
+            row[f'benchmark_{field}'] = str(benchmark_value) if benchmark_value is not None else ''
+            
+            # product字段值 - 转为字符串
+            product_value = product.get(field, '')
+            row[f'product_{field}'] = str(product_value) if product_value is not None else ''
+            
+            # similarity值 - 转为字符串
+            similarity_value = similarity_dict.get(field, '')
+            row[f'similarity_{field}'] = str(similarity_value) if similarity_value != '' else ''
+        
+        rows.append(row)
+    
+    # 创建DataFrame
+    df = pd.DataFrame(rows)
+    
+    # 定义列的顺序
+    column_order = ['sha256']
+    for field in key_list:
+        column_order.extend([f'benchmark_{field}', f'product_{field}', f'similarity_{field}'])
+    
+    # 重新排列列顺序
+    df = df[column_order]
+    
+    # 确保所有列都是字符串类型
+    for col in df.columns:
+        df[col] = df[col].astype(str)
+    
+    # 写入Excel文件
+    output_file_path = output_path / output_filename
+    with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='相似度分析', index=False)
+    
+    print(f"数据已成功写入 {output_file_path}")
+    print(f"总共处理了 {len(rows)} 条记录")
+    
+    return df
 

@@ -2,6 +2,7 @@ from pathlib import Path
 
 from dingo.config import InputArgs
 from dingo.exec import Executor
+from dingo.model.rule.rule_sciencemetabench import write_similarity_to_excel
 
 # 获取项目根目录
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -31,3 +32,5 @@ if __name__ == '__main__':
     executor = Executor.exec_map["local"](input_args)
     result = executor.execute()
     print(result)
+
+    write_similarity_to_excel("paper", "outputs/20260113_102321_d4c76b9e")
