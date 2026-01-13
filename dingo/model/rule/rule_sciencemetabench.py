@@ -296,13 +296,46 @@ def write_similarity_to_excel(type: str, output_dir: str,  output_filename: str 
     # 按sha256升序排序
     df = df.sort_values(by='sha256', ascending=True).reset_index(drop=True)
     
-    # 写入Excel文件
+    # 计算汇总数据
+    summary_rows = []
+    field_accuracies = {}
+    
+    for field in key_list:
+        similarity_col = f'similarity_{field}'
+        # 将相似度列转换为浮点数进行计算
+        similarities = pd.to_numeric(df[similarity_col], errors='coerce')
+        # 计算平均值，忽略NaN
+        avg_similarity = similarities.mean()
+        field_accuracies[field] = avg_similarity
+        
+        summary_rows.append({
+            '字段': field,
+            '平均相似度': f"{avg_similarity:.4f}" if not pd.isna(avg_similarity) else '0.0000'
+        })
+    
+    # 计算总体准确率
+    overall_accuracy = sum(field_accuracies.values()) / len(field_accuracies) if field_accuracies else 0
+    
+    # 添加总体准确率行
+    summary_rows.append({
+        '字段': '总体准确率',
+        '平均相似度': f"{overall_accuracy:.4f}"
+    })
+    
+    # 创建汇总DataFrame
+    df_summary = pd.DataFrame(summary_rows)
+    
+    # 写入Excel文件（两个sheet）
     output_file_path = output_path / output_filename
     with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
+        # 第一个sheet：详细数据
         df.to_excel(writer, sheet_name='相似度分析', index=False)
+        # 第二个sheet：汇总数据
+        df_summary.to_excel(writer, sheet_name='汇总统计', index=False)
     
     print(f"数据已成功写入 {output_file_path}")
     print(f"总共处理了 {len(rows)} 条记录")
+    print(f"总体准确率: {overall_accuracy:.4f}")
     
     return df
 
