@@ -193,6 +193,3 @@ Aggregated data containing:
 - **Overall Accuracy**: Average of all field accuracies = Σ(accuracy of each field) / total number of fields
 
 Summary statistics are automatically calculated and saved in the second worksheet, no manual calculation needed.
-
-
-
