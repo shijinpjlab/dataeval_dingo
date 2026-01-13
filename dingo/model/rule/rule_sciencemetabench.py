@@ -293,6 +293,9 @@ def write_similarity_to_excel(type: str, output_dir: str,  output_filename: str 
     for col in df.columns:
         df[col] = df[col].astype(str)
     
+    # 按sha256升序排序
+    df = df.sort_values(by='sha256', ascending=True).reset_index(drop=True)
+    
     # 写入Excel文件
     output_file_path = output_path / output_filename
     with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
