@@ -16,7 +16,7 @@ if __name__ == '__main__':
         },
         "executor": {
             "result_save": {
-                "all_in_one": True,
+                "merge": True,
             }
         },
         "evaluator": [

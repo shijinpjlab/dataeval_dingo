@@ -63,7 +63,7 @@ For complete example code, please refer to: `examples/sciencemetabench/paper.py`
 - `input_path`: Input JSONL file path
 - `dataset.source`: Data source type, use `"local"` for local files
 - `dataset.format`: Data format, use `"jsonl"`
-- `executor.result_save.all_in_one`: Whether to save all results in one file
+- `executor.result_save.merge`: Whether to save all results in one file
 - `evaluator.evals.name`: Evaluation rule name, three dedicated evaluation rules are provided:
   - `RuleMetadataMatchPaper`: Academic paper evaluation rule
   - `RuleMetadataMatchEbook`: Ebook evaluation rule

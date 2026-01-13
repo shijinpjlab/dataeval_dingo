@@ -63,7 +63,7 @@ pip install -e .
 - `input_path`: 输入 JSONL 文件路径
 - `dataset.source`: 数据源类型，本地文件使用 `"local"`
 - `dataset.format`: 数据格式，使用 `"jsonl"`
-- `executor.result_save.all_in_one`: 是否将所有结果保存在一个文件中
+- `executor.result_save.merge`: 是否将所有结果保存在一个文件中
 - `evaluator.evals.name`: 评估规则名称，提供了三个专用的评估规则
   - `RuleMetadataMatchPaper`: 学术论文评估规则
   - `RuleMetadataMatchEbook`: 电子书评估规则
