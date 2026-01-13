@@ -1,6 +1,6 @@
 # ScienceMetaBench 使用指南
 
-[English](README.md) | 中文
+[English](README.md) | [中文](README_ZH.md)
 
 ## 📖 简介
 
