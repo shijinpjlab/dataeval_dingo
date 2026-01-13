@@ -223,8 +223,8 @@ class LocalExecutor(ExecProto):
         join_fields = ','.join(eval_fields.values()) if eval_fields else 'default'
 
         # 根据配置决定保存哪些结果
-        if self.input_args.executor.result_save.all_labels:
-            # 保存所有结果
+        if self.input_args.executor.result_save.all_labels or self.input_args.executor.result_save.all_in_one:
+            # 保存所有结果（all_in_one 模式也需要保存所有结果）
             if eval_detail_list:
                 result_info.eval_details = {join_fields: eval_detail_list}
         else:
@@ -281,6 +281,18 @@ class LocalExecutor(ExecProto):
         self, path: str, input_args: InputArgs, result_info: ResultInfo
     ):
         if not input_args.executor.result_save.bad:
+            return
+
+        # 如果启用 all_in_one 模式，将所有数据写入同一个文件
+        if input_args.executor.result_save.all_in_one:
+            f_n = os.path.join(path, "all_results.jsonl")
+            with open(f_n, "a", encoding="utf-8") as f:
+                # if input_args.executor.result_save.raw:
+                #     str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
+                # else:
+                #     str_json = json.dumps(result_info.to_dict(), ensure_ascii=False)
+                str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
+                f.write(str_json + "\n")
             return
 
         if not input_args.executor.result_save.good and not result_info.eval_status:
