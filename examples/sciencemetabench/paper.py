@@ -2,7 +2,6 @@ from pathlib import Path
 
 from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.model.rule.rule_sciencemetabench import write_similarity_to_excel
 
 # 获取项目根目录
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -21,9 +20,39 @@ if __name__ == '__main__':
         },
         "evaluator": [
             {
-                # "fields": {"content": "content"},
+                "fields": {"metadata": "doi"},
                 "evals": [
-                    {"name": "RuleMetadataMatchPaper", "config": {"threshold": 0.8}}
+                    {"name": "RuleMetadataSimilarity", "config": {"threshold": 0.8}}
+                ]
+            },
+            {
+                "fields": {"metadata": "title"},
+                "evals": [
+                    {"name": "RuleMetadataSimilarity", "config": {"threshold": 0.8}}
+                ]
+            },
+            {
+                "fields": {"metadata": "author"},
+                "evals": [
+                    {"name": "RuleMetadataSimilarity", "config": {"threshold": 0.8}}
+                ]
+            },
+            {
+                "fields": {"metadata": "keyword"},
+                "evals": [
+                    {"name": "RuleMetadataSimilarity", "config": {"threshold": 0.8}}
+                ]
+            },
+            {
+                "fields": {"metadata": "abstract"},
+                "evals": [
+                    {"name": "RuleMetadataSimilarity", "config": {"threshold": 0.8}}
+                ]
+            },
+            {
+                "fields": {"metadata": "pub_time"},
+                "evals": [
+                    {"name": "RuleMetadataSimilarity", "config": {"threshold": 0.8}}
                 ]
             }
         ]
@@ -32,5 +61,3 @@ if __name__ == '__main__':
     executor = Executor.exec_map["local"](input_args)
     result = executor.execute()
     print(result)
-
-    write_similarity_to_excel("paper", result.output_path)

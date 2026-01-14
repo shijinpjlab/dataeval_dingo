@@ -44,15 +44,31 @@ pip install -e .
 
 - **`sha256`**: 唯一标识符，用于追溯源文件
 
-- **`benchmark`**: 标准答案（ground truth）
+每个元数据字段应包含 `standard` 和 `produced` 两个子字段：
+- **`standard`**: 标准答案值（基准数据）
   - **来源**: 从 [ScienceMetaBench 数据集](https://huggingface.co/datasets/opendatalab/ScienceMetaBench)获取
-  - **包含字段**：
-    - 学术论文 (Paper): `doi`, `title`, `author`, `keyword`, `abstract`, `pub_time`
-    - 教科书/电子书 (Textbook/Ebook): `isbn`, `title`, `author`, `abstract`, `category`, `pub_time`, `publisher`
 
-- **`product`**: 待评估的提取结果
+- **`produced`**: 待评估的提取结果
   - **来源**: 从 PDF 中提取
-  - **包含字段**: 与上面 `benchmark` 对应，字段相同
+
+**支持的字段**：
+- 学术论文 (Paper): `doi`, `title`, `author`, `keyword`, `abstract`, `pub_time`
+- 教科书/电子书 (Textbook/Ebook): `isbn`, `title`, `author`, `abstract`, `category`, `pub_time`, `publisher`
+
+**格式示例**：
+```json
+{
+  "sha256": "唯一标识符",
+  "doi": {
+    "standard": "10.1234/example",
+    "produced": "10.1234/example"
+  },
+  "title": {
+    "standard": "示例论文标题",
+    "produced": "示例论文标题"
+  }
+}
+```
 
 ### 3. 运行评估
 
@@ -64,10 +80,9 @@ pip install -e .
 - `dataset.source`: 数据源类型，本地文件使用 `"local"`
 - `dataset.format`: 数据格式，使用 `"jsonl"`
 - `executor.result_save.merge`: 是否将所有结果保存在一个文件中
-- `evaluator.evals.name`: 评估规则名称，提供了三个专用的评估规则
-  - `RuleMetadataMatchPaper`: 学术论文评估规则
-  - `RuleMetadataMatchEbook`: 电子书评估规则
-  - `RuleMetadataMatchTextbook`: 教科书评估规则
+- `evaluator.fields`: 字段映射，将数据字段映射到评估输入
+  - 格式：`{"metadata": "field_name"}` 其中 `field_name` 是要评估的元数据字段（例如 "doi", "title"）
+- `evaluator.evals.name`: 评估规则名称：`RuleMetadataSimilarity`
 - `evaluator.evals.config.threshold`: 相似度阈值（0-1），默认 0.6
 
 ### 4. 运行脚本
@@ -80,12 +95,12 @@ python examples/sciencemetabench/paper.py
 
 ### 相似度计算规则
 
-所有规则使用基于 `SequenceMatcher` 的字符串相似度算法：
+`RuleMetadataSimilarity` 规则使用 `calculate_similarity()` 函数，算法如下：
 
 1. **空值处理**: 一个为空另一个不为空 → 相似度为 0
 2. **完全匹配**: 二者完全相同（包括全为空）→ 相似度为 1
 3. **忽略大小写**: 转换为小写后进行比较
-4. **序列匹配**: 使用最长公共子序列算法计算相似度（范围: 0-1）
+4. **序列匹配**: 使用 `SequenceMatcher`（最长公共子序列）计算相似度（范围: 0-1）
 
 **相似度分数解读**：
 - `1.0`: 完全匹配
@@ -97,37 +112,42 @@ python examples/sciencemetabench/paper.py
 
 每个样本的评估结果包含：
 
-- `eval_status`: 评估状态
-- `eval_details`: 详细评估信息
-  - `metric`: 使用的评估规则名称
-  - `status`: 是否有字段未达到阈值
-  - `label`: 未达到阈值的字段列表（如果有）
-  - `reason`: 包含所有字段的相似度分数
+- `eval_status`: 整体评估状态（任一字段未通过则为 true）
+- `eval_details`: 按字段分组的详细评估信息
+  - `metric`: 使用的评估规则名称（`RuleMetadataSimilarity`）
+  - `status`: 该字段是否未达到阈值
+  - `score`: 相似度分数（0-1）
+  - `label`: 质量标签（`QUALITY_GOOD` 或 `QUALITY_BAD_EFFECTIVENESS.RuleMetadataSimilarity`）
 
 **示例输出**：
 ```json
 {
   "sha256": "7d05cfd0101f9443...",
+  "doi": {
+    "standard": "10.1234/example",
+    "produced": "10.1234/example"
+  },
+  "title": {
+    "standard": "示例标题",
+    "produced": "示例标题研究"
+  },
   "dingo_result": {
-    "eval_status": true,
+    "eval_status": false,
     "eval_details": {
-      "default": [
+      "doi": [
         {
-          "metric": "RuleMetadataMatchPaper",
-          "status": true,
-          "label": ["QUALITY_BAD_EFFECTIVENESS.RuleMetadataMatchPaper.abstract"],
-          "reason": [
-            {
-              "similarity": {
-                "doi": 1.0,
-                "title": 0.941,
-                "author": 1.0,
-                "keyword": 0.977,
-                "abstract": 0.488,
-                "pub_time": 1.0
-              }
-            }
-          ]
+          "metric": "RuleMetadataSimilarity",
+          "status": false,
+          "score": 1.0,
+          "label": ["QUALITY_GOOD"]
+        }
+      ],
+      "title": [
+        {
+          "metric": "RuleMetadataSimilarity",
+          "status": false,
+          "score": 0.941,
+          "label": ["QUALITY_GOOD"]
         }
       ]
     }
@@ -137,59 +157,93 @@ python examples/sciencemetabench/paper.py
 
 ## 📈 结果导出与分析
 
-### 使用 write_similarity_to_excel 函数
+### 分析评估结果
 
-评估完成后，可以使用内置函数将结果导出为 Excel 文件：
+评估完成后，结果以 JSONL 格式保存在输出目录中。每行包含：
 
-```python
-from dingo.model.rule.rule_sciencemetabench import write_similarity_to_excel
+- 原始数据字段（例如 `doi`、`title` 等）
+- `dingo_result` 字段中的评估结果
 
-# 导出学术论文评估结果
-write_similarity_to_excel(
-    type='paper',                    # 数据类型: 'paper', 'ebook', 'textbook'
-    output_dir='outputs/xxx',        # 输出目录路径
-    output_filename='custom.xlsx'    # 可选，自定义文件名
-)
+### 结果统计
+
+评估框架会自动生成 `summary.json` 文件，包含：
+
+- `task_id`: 任务唯一标识符
+- `task_name`: 任务名称
+- `input_path`: 输入数据路径
+- `output_path`: 输出目录路径
+- `create_time`: 任务创建时间
+- `finish_time`: 任务完成时间
+- `score`: 整体质量得分（百分比，0-100）
+- `num_good`: 通过所有质量检查的样本数
+- `num_bad`: 至少有一个质量检查未通过的样本数
+- `total`: 评估的样本总数
+- `type_ratio`: 按字段分组的质量标签分布（比例 0-1）
+- `metrics_score`: 每个字段和指标的详细统计数据
+
+**示例 summary.json**：
+```json
+{
+  "task_id": "6f6cadfc-f118-11f0-9e50-8c32235aff7d",
+  "task_name": "dingo",
+  "input_path": "/path/to/paper.jsonl",
+  "output_path": "outputs/20260114_151249_6f6caae6",
+  "create_time": "20260114_151249",
+  "finish_time": "20260114_151249",
+  "score": 0.0,
+  "num_good": 0,
+  "num_bad": 3,
+  "total": 3,
+  "type_ratio": {
+    "doi": {
+      "QUALITY_GOOD": 0.666667,
+      "QUALITY_BAD_EFFECTIVENESS.RuleMetadataSimilarity": 0.333333
+    },
+    "title": {
+      "QUALITY_GOOD": 0.666667,
+      "QUALITY_BAD_EFFECTIVENESS.RuleMetadataSimilarity": 0.333333
+    }
+  },
+  "metrics_score": {
+    "doi": {
+      "stats": {
+        "RuleMetadataSimilarity": {
+          "score_average": 0.67,
+          "score_count": 3,
+          "score_min": 0.0,
+          "score_max": 1.0,
+          "score_std_dev": 0.47
+        }
+      },
+      "summary": {
+        "RuleMetadataSimilarity": 0.67
+      },
+      "overall_average": 0.67
+    },
+    "title": {
+      "stats": {
+        "RuleMetadataSimilarity": {
+          "score_average": 0.87,
+          "score_count": 3,
+          "score_min": 0.7,
+          "score_max": 0.98,
+          "score_std_dev": 0.12
+        }
+      },
+      "summary": {
+        "RuleMetadataSimilarity": 0.87
+      },
+      "overall_average": 0.87
+    }
+  }
+}
 ```
 
-**参数说明**：
-- `type`: 数据类型，必须是 `'paper'`、`'ebook'` 或 `'textbook'`
-- `output_dir`: 包含评估结果 JSONL 文件的目录
-- `output_filename`: （可选）自定义输出文件名，默认为 `similarity_{type}_{timestamp}.xlsx`
-
-### Excel 输出格式
-
-生成的 Excel 文件包含两个工作表（sheet）：
-
-#### Sheet 1: 相似度分析
-
-详细数据，包含以下列：
-
-```
-sha256 | benchmark_字段1 | product_字段1 | similarity_字段1 | benchmark_字段2 | product_字段2 | similarity_字段2 | ...
-```
-
-**说明**：
-- 所有数据按 `sha256` 升序排序
-- 每个字段包含三列：
-  - `benchmark_{field}`: 标准答案
-  - `product_{field}`: 提取结果
-  - `similarity_{field}`: 相似度分数（字符串格式）
-- 所有单元格内容均为字符串类型
-
-#### Sheet 2: 汇总统计
-
-汇总数据，包含：
-
-| 字段 | 平均相似度 |
-|------|-----------|
-| doi | 0.6667 |
-| title | 0.8730 |
-| ... | ... |
-| **总体准确率** | **0.6719** |
-
-**指标说明**：
-- **字段级准确率**：每个字段的平均相似度 = Σ(该字段所有样本的相似度) / 样本总数
-- **总体准确率**：所有字段准确率的平均值 = Σ(各字段准确率) / 字段总数
-
-汇总统计数据会自动计算并保存在第二个工作表中，无需手动计算。
+**字段说明**：
+- `type_ratio`: 显示每个字段中各质量标签的样本比例
+  - `QUALITY_GOOD`: 达到阈值的样本
+  - `QUALITY_BAD_EFFECTIVENESS.RuleMetadataSimilarity`: 低于阈值的样本
+- `metrics_score`: 包含每个评估字段的详细统计信息
+  - `stats`: 统计指标，包括平均值、计数、最小值、最大值和标准差
+  - `summary`: 每个指标的汇总分数
+  - `overall_average`: 该字段的总体平均分数
