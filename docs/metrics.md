@@ -51,7 +51,6 @@ This document provides comprehensive information about all quality metrics used 
 |------|--------|-------------|--------------|-------------------|----------|
 | `LLMClassifyQR` | LLMClassifyQR | Identifies images as CAPTCHA, QR code, or normal images | Internal Implementation | N/A | N/A |
 | `VLMOCRUnderstanding` | VLMOCRUnderstanding | 评估多模态模型对图片中文字内容的识别和理解能力，使用DeepSeek-OCR作为Ground Truth | [DeepSeek-OCR: Contexts Optical Compression](https://github.com/deepseek-ai/DeepSeek-OCR) | [📊 See Results](通过对比VLM输出与OCR ground truth，识别文字遗漏、错误、幻觉等问题) | N/A |
-| `VLMRenderJudge` | VLMRenderJudge | VLM-based OCR quality evaluation through visual render-compare | Internal Implementation | N/A | N/A |
 
 ### Rule-Based TEXT Quality Metrics
 
@@ -107,6 +106,12 @@ This document provides comprehensive information about all quality metrics used 
 | `LLMResumeOptimizer` | LLMResumeOptimizer | ATS-focused resume optimization with keyword injection and STAR polishing | Internal Implementation | N/A | N/A |
 | `LLMResumeQuality` | LLMResumeQuality | Comprehensive resume quality evaluation covering privacy, contact, format, structure, professionalism, date, and comp... | Internal Implementation | N/A | N/A |
 
+### Rule-Based Metadata Quality Metrics
+
+| Type | Metric | Description | Paper Source | Evaluation Results | Examples |
+|------|--------|-------------|--------------|-------------------|----------|
+| `QUALITY_BAD_EFFECTIVENESS` | RuleMetadataSimilarity | 检查元数据字段与基准数据的相似度匹配，阈值默认为0.6 | Internal Implementation | N/A | N/A |
+
 ### Rule-Based RESUME Quality Metrics
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
@@ -130,4 +135,10 @@ This document provides comprehensive information about all quality metrics used 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
 |------|--------|-------------|--------------|-------------------|----------|
 | `LLMLongVideoQa` | LLMLongVideoQa | Generate video-related question-answer pairs based on the summarized information of the input long video. | [VRBench: A Benchmark for Multi-Step Reasoning in Long Narrative Videos](https://arxiv.org/abs/2506.108572) (Jiashuo Yu et al., 2025) | N/A | N/A |
+
+### Other Metrics
+
+| Type | Metric | Description | Paper Source | Evaluation Results | Examples |
+|------|--------|-------------|--------------|-------------------|----------|
+| `AgentFactCheck` | AgentFactCheck | Agent-based hallucination detection with autonomous web search | Internal Implementation | N/A | N/A |
 
