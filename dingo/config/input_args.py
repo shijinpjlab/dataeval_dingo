@@ -71,6 +71,7 @@ class ExecutorResultSaveArgs(BaseModel):
     good: bool = False
     all_labels: bool = False
     raw: bool = False
+    merge: bool = False  # 如果为True，所有数据写入同一个jsonl文件，不分文件夹
 
 
 class ExecutorArgs(BaseModel):

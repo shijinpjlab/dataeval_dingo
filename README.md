@@ -294,13 +294,14 @@ Dingo provides **70+ evaluation metrics** across multiple dimensions, combining 
 | **RAG Evaluation** | Faithfulness, Context Precision, Answer Relevancy | RAG system assessment |
 | **Hallucination Detection** | HHEM-2.1-Open, Factuality Check | Production AI reliability |
 | **Classification** | Topic categorization, Content labeling | Data organization |
-| **Multimodal** | Image-text relevance, VLM quality | Vision-language data |
+| **Multimodal** | Image-text relevance, VLM quality, OCR visual evaluation | Vision-language data |
 | **Security** | PII detection, Perspective API toxicity | Privacy and safety |
 
 📊 **[View Complete Metrics Documentation →](docs/metrics.md)**  
 📖 **[RAG Evaluation Guide →](docs/rag_evaluation_metrics.md)** | **[中文版](docs/rag_evaluation_metrics_zh.md)**  
 🔍 **[Hallucination Detection Guide →](docs/hallucination_detection_guide.md)** | **[中文版](docs/hallucination_guide.md)**  
-✅ **[Factuality Assessment Guide →](docs/factuality_assessment_guide.md)** | **[中文版](docs/factcheck_guide.md)**
+✅ **[Factuality Assessment Guide →](docs/factuality_assessment_guide.md)** | **[中文版](docs/factcheck_guide.md)**  
+👁️ **[VLM Render Judge Guide →](docs/en/vlm_render_judge_guide.md)** | **[中文版](docs/vlm_render_judge_guide.md)**
 
 Most metrics are backed by academic research to ensure scientific rigor.
 
@@ -500,7 +501,27 @@ class CustomEvaluator(BaseOpenAI):
 
 ### Agent-Based Evaluation with Tools
 
-Dingo supports agent-based evaluators that can use external tools for multi-step reasoning and adaptive context gathering:
+Dingo supports agent-based evaluators that can use external tools for multi-step reasoning and adaptive context gathering. Two implementation patterns are available:
+
+**Pattern 1: LangChain-Based** (e.g., `AgentFactCheck`)
+- Framework-driven with autonomous multi-step reasoning
+- Uses LangChain 1.0's `create_agent` with ReAct pattern
+- Best for: Complex reasoning tasks, rapid prototyping
+- Less code, more declarative
+
+**Pattern 2: Custom Workflow** (e.g., `AgentHallucination`)
+- Developer-driven with explicit workflow control
+- Manual tool calls and LLM interactions
+- Best for: Composing existing evaluators, domain-specific workflows
+- Full control, explicit behavior
+
+Both patterns share the same configuration interface and are transparent to users.
+
+**Built-in Agents:**
+- `AgentFactCheck`: LangChain-based fact-checking with autonomous search control
+- `AgentHallucination`: Custom workflow hallucination detection with adaptive context gathering
+
+**Quick Example:**
 
 ```python
 from dingo.io import Data
@@ -526,8 +547,7 @@ class MyAgent(BaseAgent):
         return EvalDetail(...)
 ```
 
-**Built-in Agent:**
-- `AgentHallucination`: Enhanced hallucination detection with web search fallback
+For detailed guidance on choosing and implementing agent patterns, see [Agent Development Guide](docs/agent_development_guide.md).
 
 **Configuration Example:**
 ```json
