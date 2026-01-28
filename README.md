@@ -177,7 +177,7 @@ python -m dingo.run.vsl --input output_directory
 
 Where `output_directory` contains the evaluation results with a `summary.json` file.
 
-![GUI output](docs/assets/dingo_gui.png)
+![GUI output](docs/assets/dingo_gui.jpg)
 
 ## Online Demo
 Try Dingo on our online demo: [(Hugging Face)🤗](https://huggingface.co/spaces/DataEval/dingo)

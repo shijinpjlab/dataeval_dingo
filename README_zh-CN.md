@@ -177,7 +177,7 @@ python -m dingo.run.vsl --input 输出目录
 
 其中`输出目录`包含评估结果和`summary.json`文件。
 
-![GUI output](docs/assets/dingo_gui.png)
+![GUI output](docs/assets/dingo_gui.jpg)
 
 ## 在线演示
 尝试我们的在线演示: [(Hugging Face)🤗](https://huggingface.co/spaces/DataEval/dingo)
