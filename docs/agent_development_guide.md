@@ -48,18 +48,18 @@ Data → Agent → [Tool 1, Tool 2, ...] → LLM Reasoning → EvalDetail
 
 ## Agent Implementation Patterns
 
-Dingo supports two complementary patterns for implementing agent-based evaluators. Both patterns share the same configuration interface and are transparent to users, allowing you to choose the approach that best fits your needs.
+Dingo supports three complementary patterns for implementing agent-based evaluators. All patterns share the same configuration interface and are transparent to users, allowing you to choose the approach that best fits your needs.
 
 ### Pattern Comparison
 
-| Aspect | LangChain-Based | Custom Workflow |
-|--------|-----------------|-----------------|
-| **Control** | Framework-driven | Developer-driven |
-| **Complexity** | Simple (declarative) | Moderate (imperative) |
-| **Flexibility** | Limited to LangChain patterns | Unlimited |
-| **Code Volume** | Low (~100 lines) | Medium (~200 lines) |
-| **Best For** | Multi-step reasoning | Workflow composition |
-| **Example** | AgentFactCheck | AgentHallucination |
+| Aspect | LangChain-Based | Custom Workflow | Agent-First + Context |
+|--------|-----------------|-----------------|----------------------|
+| **Control** | Framework-driven | Developer-driven | Framework + override |
+| **Complexity** | Simple (declarative) | Moderate (imperative) | Moderate (hybrid) |
+| **Flexibility** | Limited to LangChain | Unlimited | LangChain + artifacts |
+| **Code Volume** | Low (~100 lines) | Medium (~200 lines) | High (~500+ lines) |
+| **Best For** | Multi-step reasoning | Workflow composition | Article-level verification |
+| **Example** | AgentFactCheck | AgentHallucination | ArticleFactChecker |
 
 ### Pattern 1: LangChain-Based Agents (Framework-Driven)
 
@@ -367,25 +367,140 @@ Provide a concise summary of the key facts."""
 
 ---
 
+### Pattern 3: Agent-First with Context Tracking (ArticleFactChecker)
+
+**Philosophy**: Use LangChain's ReAct pattern for autonomous reasoning, override `eval()` and `aggregate_results()` for context tracking and artifact saving.
+
+#### When to Use
+
+- Article-level comprehensive verification (many claims)
+- Need intermediate artifacts (claims list, per-claim details, structured report)
+- Want dual-layer output: human-readable text + structured data
+- Benefit from thread-safe concurrent evaluation
+
+#### Key Implementation Steps
+
+1. Set `use_agent_executor = True` (same as Pattern 1)
+2. **Override `eval()`** with a two-phase async architecture:
+   - Save article content to output directory
+   - Call `asyncio.run(cls._async_eval(input_data, ...))` (bypasses `_eval_with_langchain_agent`)
+   - Phase 1: Direct `ClaimsExtractor.execute()` call (no agent overhead)
+   - Phase 2: Per-claim verification via `asyncio.gather()` + `Semaphore(max_concurrent_claims)`
+3. **Each claim** gets its own independent LangChain mini-agent:
+   - `_async_verify_single_claim()` invokes `AgentWrapper.async_invoke_and_format()`
+   - Results parsed by `_parse_claim_json_robust()` (3-tier robust parser)
+4. **Aggregation** via `_aggregate_parallel_results()` and `_recalculate_summary()`
+   - Save artifacts (claims_extracted.jsonl, claims_verification.jsonl, report.json)
+   - Return EvalDetail with dual-layer reason: `[text_summary, report_dict]`
+
+#### Async Parallel Execution Pattern
+
+```python
+import asyncio
+import threading
+
+class ArticleFactChecker(BaseAgent):
+    _thread_local = threading.local()
+    _claims_extractor_lock = threading.Lock()  # Thread-safe config mutation
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        start_time = time.time()
+        output_dir = cls._get_output_dir()
+        if output_dir and input_data.content:
+            cls._save_article_content(output_dir, input_data.content)
+        try:
+            return asyncio.run(cls._async_eval(input_data, start_time, output_dir))
+        except RuntimeError:
+            # Fallback for already-running event loop (e.g., Jupyter)
+            loop = asyncio.new_event_loop()
+            return loop.run_until_complete(cls._async_eval(input_data, start_time, output_dir))
+
+    @classmethod
+    async def _async_eval(cls, input_data, start_time, output_dir) -> EvalDetail:
+        claims = await cls._async_extract_claims(input_data)
+        semaphore = asyncio.Semaphore(cls._get_max_concurrent_claims())
+        tasks = [cls._async_verify_single_claim(c, semaphore, ...) for c in claims]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return cls._build_eval_detail(results, start_time, output_dir, input_data)
+```
+
+#### Output Path Access Pattern
+
+`_get_output_dir()` uses a three-priority chain (highest to lowest):
+
+1. **Explicit path** – `agent_config.output_path` is set → use it (backward-compatible)
+2. **Opt-out** – `agent_config.save_artifacts=false` → return `None`, skip saving
+3. **Auto-generate** – default behaviour: `outputs/article_factcheck_<timestamp>_<uuid>/`
+   - Override the base directory with `agent_config.base_output_path`
+
+```python
+@classmethod
+def _get_output_dir(cls) -> Optional[str]:
+    """
+    Get output directory for artifact files (three-priority chain).
+    Returns output dir path (created if needed), or None if saving disabled.
+    """
+    params = cls.dynamic_config.parameters or {}
+    agent_cfg = params.get('agent_config') or {}
+
+    explicit_path = agent_cfg.get('output_path')
+    if explicit_path:
+        os.makedirs(explicit_path, exist_ok=True)
+        return explicit_path
+
+    if agent_cfg.get('save_artifacts') is False:
+        return None  # Opted out of artifact saving
+
+    base_output = agent_cfg.get('base_output_path') or 'outputs'
+    create_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    auto_path = os.path.join(base_output, f"article_factcheck_{create_time}_{uuid.uuid4().hex[:6]}")
+    os.makedirs(auto_path, exist_ok=True)
+    return auto_path
+```
+
+#### Dual-Layer EvalDetail.reason
+
+```python
+# reason[0]: Human-readable text summary (str)
+# reason[1]: Structured report dict (JSON-serializable, optional)
+result.reason = [text_summary]
+if report:
+    result.reason.append(report)  # Dict, not str
+```
+
+This ensures the Dingo standard output contains both readable summaries and full structured data.
+
+**Full implementation**: `dingo/model/llm/agent/agent_article_fact_checker.py`
+**Tests**: `test/scripts/model/llm/agent/test_article_fact_checker.py` (88 tests),
+`test/scripts/model/llm/agent/test_async_article_fact_checker.py` (30 tests)
+**Guide**: `docs/article_fact_checking_guide.md`
+
+---
+
 ### Decision Tree: Which Pattern Should I Use?
 
 ```
 Start
-  │
-  ├─ Do you need to compose with existing Dingo evaluators?
-  │    ├─ Yes → Use Custom Pattern (AgentHallucination style)
-  │    └─ No → Continue
-  │
-  ├─ Is your workflow highly domain-specific?
-  │    ├─ Yes → Use Custom Pattern
-  │    └─ No → Continue
-  │
-  ├─ Do you prefer explicit control over every step?
-  │    ├─ Yes → Use Custom Pattern
-  │    └─ No → Continue
-  │
-  └─ Default → Use LangChain Pattern (AgentFactCheck style)
-       ✅ Simpler, less code, battle-tested
+  |
+  +- Do you need intermediate artifact saving (claims, reports)?
+  |    +- Yes -> Use Agent-First + Context (ArticleFactChecker style)
+  |    +- No  -> Continue
+  |
+  +- Do you need to compose with existing Dingo evaluators?
+  |    +- Yes -> Use Custom Pattern (AgentHallucination style)
+  |    +- No  -> Continue
+  |
+  +- Is your workflow highly domain-specific?
+  |    +- Yes -> Use Custom Pattern
+  |    +- No  -> Continue
+  |
+  +- Do you prefer explicit control over every step?
+  |    +- Yes -> Use Custom Pattern
+  |    +- No  -> Continue
+  |
+  +- Default -> Use LangChain Pattern (AgentFactCheck style)
+       Simpler, less code, battle-tested
 ```
 
 ### Can I Mix Both Patterns?
@@ -395,6 +510,7 @@ Start
 ```json
 {
   "evaluator": [{
+    "fields": {"content": "content"},
     "evals": [
       {"name": "AgentFactCheck"},      // LangChain-based
       {"name": "AgentHallucination"}   // Custom workflow
@@ -1408,7 +1524,11 @@ class TestMyAgent:
 
 - **AgentHallucination**: `dingo/model/llm/agent/agent_hallucination.py` - Production agent with web search
 - **AgentFactCheck**: `examples/agent/agent_executor_example.py` - LangChain 1.0 agent example
+- **ArticleFactChecker**: `dingo/model/llm/agent/agent_article_fact_checker.py` - Agent-First with context tracking and artifact saving
+- **ArticleFactChecker Example**: `examples/agent/agent_article_fact_checking_example.py` - Full article fact-checking example
 - **TavilySearch Tool**: `dingo/model/llm/agent/tools/tavily_search.py` - Web search tool implementation
+- **ClaimsExtractor Tool**: `dingo/model/llm/agent/tools/claims_extractor.py` - LLM-based claims extraction tool
+- **ArxivSearch Tool**: `dingo/model/llm/agent/tools/arxiv_search.py` - Academic paper search tool
 
 **Note**: For complete implementation examples, refer to the files above. They demonstrate real-world patterns for agent and tool development.
 
@@ -1525,10 +1645,15 @@ summary = executor.execute()
 ## Additional Resources
 
 - [AgentHallucination Implementation](../dingo/model/llm/agent/agent_hallucination.py)
+- [ArticleFactChecker Implementation](../dingo/model/llm/agent/agent_article_fact_checker.py)
 - [BaseAgent Source](../dingo/model/llm/agent/base_agent.py)
 - [Tool Registry Source](../dingo/model/llm/agent/tools/tool_registry.py)
 - [Tavily Search Example](../dingo/model/llm/agent/tools/tavily_search.py)
+- [Claims Extractor](../dingo/model/llm/agent/tools/claims_extractor.py)
+- [ArxivSearch](../dingo/model/llm/agent/tools/arxiv_search.py)
 - [Example Usage](../examples/agent/agent_hallucination_example.py)
+- [Article Fact-Checking Example](../examples/agent/agent_article_fact_checking_example.py)
+- [Article Fact-Checking Guide](./article_fact_checking_guide.md)
 
 ---
 
