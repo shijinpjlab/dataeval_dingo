@@ -40,7 +40,7 @@ class LLMResumeOptimizer(BaseOpenAI):
         "source_frameworks": "Dingo ATS Tools"
     }
 
-    _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT, RequiredField.PROMPT]
+    _required_fields = [RequiredField.CONTENT]
 
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
@@ -338,24 +338,24 @@ Target Position: {target_position}
 ## Output Format (JSON)
 
 Return a JSON object with this structure:
-{{{{
+{{
     "target_position": "String",
-    "optimization_summary": {{{{
+    "optimization_summary": {{
         "keywords_added": ["keyword1", "keyword2"],
         "keywords_associative": ["keyword (context)"],
         "keywords_deemphasized": ["keyword"],
         "keywords_unused": ["keyword"]
-    }}}},
+    }},
     "section_changes": [
-        {{{{
+        {{
             "section_name": "String",
             "before": "Full original text",
             "after": "Full optimized text",
             "changes": ["Change 1", "Change 2"]
-        }}}}
+        }}
     ],
     "overall_improvement": "Brief summary of improvements"
-}}}}
+}}
 
 **Input Data:**
 Resume:
@@ -395,21 +395,21 @@ Focus on:
 ## Output Format (JSON)
 
 Return a JSON object with this structure:
-{{{{
+{{
     "target_position": "String",
-    "optimization_summary": {{{{
+    "optimization_summary": {{
         "improvements": ["Improvement 1", "Improvement 2"]
-    }}}},
+    }},
     "section_changes": [
-        {{{{
+        {{
             "section_name": "String",
             "before": "Full original text",
             "after": "Full optimized text",
             "changes": ["Change 1", "Change 2"]
-        }}}}
+        }}
     ],
     "overall_improvement": "Brief summary of improvements"
-}}}}
+}}
 
 **Input Data:**
 Resume:
@@ -470,24 +470,24 @@ Please optimize and return the JSON result:
 ## 输出格式 (JSON)
 
 返回以下结构的 JSON 对象：
-{{{{
+{{
     "target_position": "目标岗位",
-    "optimization_summary": {{{{
+    "optimization_summary": {{
         "keywords_added": ["关键词1", "关键词2"],
         "keywords_associative": ["关键词 (关联说明)"],
         "keywords_deemphasized": ["被弱化的关键词"],
         "keywords_unused": ["未能融入的关键词"]
-    }}}},
+    }},
     "section_changes": [
-        {{{{
+        {{
             "section_name": "板块名称",
             "before": "完整原文",
             "after": "完整优化后文本",
             "changes": ["变更1", "变更2"]
-        }}}}
+        }}
     ],
     "overall_improvement": "优化总结"
-}}}}
+}}
 
 **输入数据：**
 简历：
@@ -527,21 +527,21 @@ Please optimize and return the JSON result:
 ## 输出格式 (JSON)
 
 返回以下结构的 JSON 对象：
-{{{{
+{{
     "target_position": "目标岗位",
-    "optimization_summary": {{{{
+    "optimization_summary": {{
         "improvements": ["改进1", "改进2"]
-    }}}},
+    }},
     "section_changes": [
-        {{{{
+        {{
             "section_name": "板块名称",
             "before": "完整原文",
             "after": "完整优化后文本",
             "changes": ["变更1", "变更2"]
-        }}}}
+        }}
     ],
     "overall_improvement": "优化总结"
-}}}}
+}}
 
 **输入数据：**
 简历：
