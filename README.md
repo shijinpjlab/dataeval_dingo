@@ -59,6 +59,27 @@
 
 **Dingo is A Comprehensive AI Data, Model and Application Quality Evaluation Tool**, designed for ML practitioners, data engineers, and AI researchers. It helps you systematically assess and improve the quality of training data, fine-tuning datasets, and production AI systems.
 
+---
+
+## 🚀 Enterprise Dingo SaaS Version
+
+Need a **production-grade data quality platform**? Try [Dingo SaaS](https://github.com/MigoXLab/dingo-saas) Enterprise Edition!
+
+### ✨ Compared to the open-source version, SaaS provides:
+
+- 🌐 **Web UI** - Visual evaluation interface, no coding required
+- 🔐 **Access Control** - JWT + Google OAuth 2.0
+- 📊 **Visual Reports** - Interactive charts, trend analysis, export features
+- 🔌 **RESTful API** - Seamless integration with existing systems
+
+### 📝 How to Get Free SaaS Code
+
+👉 **[Apply for Dingo SaaS Repository Access](https://aicarrier.feishu.cn/share/base/form/shrcn9RqYttByQ5H1np6Yrnmhuf)** 
+
+Review time: 1-5 business days | Suitable for enterprise data governance, team collaboration
+
+---
+
 ## Why Dingo?
 
 🎯 **Production-Grade Quality Checks** - From pre-training datasets to RAG systems, ensure your AI gets high-quality data
@@ -84,7 +105,21 @@
 ## Installation
 
 ```shell
+# Core package (rule-based evaluation, LLM evaluation, MCP server)
 pip install dingo-python
+
+# With specific datasource support
+pip install dingo-python[sql]              # + SQL databases
+pip install dingo-python[s3]               # + AWS S3 storage
+pip install dingo-python[parquet]          # + Parquet file support
+pip install dingo-python[huggingface]      # + HuggingFace datasets
+pip install dingo-python[excel]            # + Excel file support
+
+# With all datasource support
+pip install dingo-python[datasource]
+
+# With all features (datasource + agent + optional models)
+pip install dingo-python[all]
 ```
 
 ## Example Use Cases of Dingo
@@ -177,7 +212,7 @@ python -m dingo.run.vsl --input output_directory
 
 Where `output_directory` contains the evaluation results with a `summary.json` file.
 
-![GUI output](docs/assets/dingo_gui.png)
+![GUI output](docs/assets/dingo_gui.jpg)
 
 ## Online Demo
 Try Dingo on our online demo: [(Hugging Face)🤗](https://huggingface.co/spaces/DataEval/dingo)
@@ -520,6 +555,7 @@ Both patterns share the same configuration interface and are transparent to user
 **Built-in Agents:**
 - `AgentFactCheck`: LangChain-based fact-checking with autonomous search control
 - `AgentHallucination`: Custom workflow hallucination detection with adaptive context gathering
+- `ArticleFactChecker`: Two-phase article fact-checking — extracts verifiable claims then verifies each in parallel using web search and Arxiv, with configurable concurrency control
 
 **Quick Example:**
 
@@ -576,6 +612,7 @@ For detailed guidance on choosing and implementing agent patterns, see [Agent De
 - [Agent Development Guide](docs/agent_development_guide.md) - Comprehensive guide for creating custom agents and tools
 - [AgentHallucination Example](examples/agent/agent_hallucination_example.py) - Production agent example
 - [AgentFactCheck Example](examples/agent/agent_executor_example.py) - LangChain agent example
+- [ArticleFactChecker Example](examples/agent/agent_article_fact_checking_example.py) - Article-scale two-phase fact verification
 
 ## ⚙️ Execution Modes
 
