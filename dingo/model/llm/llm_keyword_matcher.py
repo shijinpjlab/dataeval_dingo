@@ -138,26 +138,26 @@ Count how many times the keyword appears in both JD and Resume.
 ### 3. OUTPUT SCHEMA (Strict JSON)
 Return ONLY a valid JSON object. No markdown, no code blocks, no commentary.
 
-{{{{
-  "jd_analysis": {{{{
+{{
+  "jd_analysis": {{
     "job_title": "String (extracted job title, or null if not found)",
     "skills_total": Integer
-  }}}},
+  }},
   "keyword_analysis": [
-    {{{{
+    {{
       "keyword": "String (normalized form, e.g., 'Kubernetes' not 'k8s')",
       "importance": "Required" | "Nice-to-have" | "Excluded",
       "match_status": "Matched" | "Missing",
       "match_type": "Exact" | "Substring" | "Semantic" | "Alias" | "None",
       "evidence": "String (max 50 chars quote from resume, or null if missing)",
       "reasoning": "String (ONLY for Semantic match, explain why, else null)",
-      "frequency": {{{{
+      "frequency": {{
         "jd": Integer,
         "resume": Integer
-      }}}}
-    }}}}
+      }}
+    }}
   ]
-}}}}
+}}
 
 ### 4. IMPORTANT RULES
 1. **Excluded + Matched**: If a skill is Excluded in JD but present in Resume, set match_status to "Matched".
